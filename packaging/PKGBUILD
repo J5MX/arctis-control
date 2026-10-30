@@ -3,16 +3,19 @@
 # Compila desde la copia local del repositorio (la carpeta superior a esta).
 # Uso:  cd packaging && makepkg -si
 
-pkgname=nova5-panel
-pkgver=0.2.1
+pkgname=arctis-control
+pkgver=0.3.0
 pkgrel=1
-pkgdesc="Panel no oficial para los SteelSeries Arctis Nova 5: batería, ecualizador y ajustes (HeadsetControl)"
+pkgdesc="Panel no oficial para auriculares SteelSeries Arctis: batería, ecualizador y ajustes (HeadsetControl)"
 arch=('x86_64')
-url="https://github.com/J5MX/nova5-panel"
-license=('custom')
+url="https://github.com/J5MX/arctis-control"
+license=('GPL-3.0-or-later')
 depends=('headsetcontrol' 'qt6-base' 'qt6-declarative' 'qt6-svg' 'gcc-libs' 'glibc')
 makedepends=('cmake')
 optdepends=('ttf-fira-sans: tipografía de la interfaz')
+provides=('nova5-panel')
+conflicts=('nova5-panel')
+replaces=('nova5-panel')
 
 build() {
   cmake -B build -S "$startdir/.." \

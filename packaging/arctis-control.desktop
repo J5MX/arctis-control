@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=Arctis Control
+GenericName=Control de auriculares
+Comment=Batería, ecualizador y ajustes de los auriculares SteelSeries Arctis
+Exec=arctis-control
+Icon=arctis-control
+Terminal=false
+Categories=AudioVideo;Audio;
+Keywords=SteelSeries;Arctis;headset;auriculares;HeadsetControl;
+StartupWMClass=arctis-control

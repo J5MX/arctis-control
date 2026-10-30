@@ -2,11 +2,14 @@ import QtQuick
 import QtQuick.Controls.Basic
 import QtQuick.Layouts
 
-// Banda del ecualizador: deslizador vertical de -10 a +10 dB en pasos de 0,5.
+// Banda del ecualizador: deslizador vertical con el rango que admita el auricular.
 ColumnLayout {
     id: band
 
     property string label
+    property real from: -10
+    property real to: 10
+    property real step: 0.5
     property alias value: slider.value
     readonly property real sliderCenter: slider.y + slider.height / 2
     signal moved()
@@ -35,9 +38,9 @@ ColumnLayout {
         id: slider
         Layout.alignment: Qt.AlignHCenter
         orientation: Qt.Vertical
-        from: -10
-        to: 10
-        stepSize: 0.5
+        from: band.from
+        to: band.to
+        stepSize: band.step
         snapMode: Slider.SnapAlways
         implicitWidth: 28
         implicitHeight: 170
