@@ -17,7 +17,17 @@
 
 namespace {
 
-const QString kHeadsetControl = QStringLiteral(HEADSETCONTROL_PATH);
+// Distribution packages install it in /usr/bin; building it from source (needed on
+// Debian and some Ubuntu releases) puts it in /usr/local/bin. Both are root-owned.
+QString headsetControlPath()
+{
+    const QString configured = QStringLiteral(HEADSETCONTROL_PATH);
+    const QString local = QStringLiteral("/usr/local/bin/headsetcontrol");
+    if (configured == QLatin1String("/usr/bin/headsetcontrol") && !QFileInfo(configured).isExecutable()
+        && QFileInfo(local).isExecutable())
+        return local;
+    return configured;
+}
 const QString kSteelSeriesVendor = QStringLiteral("0x1038");
 const QString kTestVendor = QStringLiteral("0xf00b");
 constexpr int kTimeoutMs = 20000;
@@ -171,7 +181,7 @@ HeadsetController::HeadsetController(QObject *parent)
     QProcessEnvironment env;
     env.insert(QStringLiteral("LANG"), QStringLiteral("C.UTF-8"));
     m_process.setProcessEnvironment(env);
-    m_process.setProgram(kHeadsetControl);
+    m_process.setProgram(headsetControlPath());
 
     m_killTimer.setSingleShot(true);
     m_killTimer.setInterval(kTimeoutMs);
@@ -203,6 +213,8 @@ HeadsetController::HeadsetController(QObject *parent)
     connect(&m_pollTimer, &QTimer::timeout, this, &HeadsetController::refresh);
 
     loadState();
+    // First of all: find out whether this headsetcontrol can target one device.
+    enqueue({{QStringLiteral("-h")}, nullptr, {}, false, {}, true});
     setPolling(true);
 }
 
@@ -226,15 +238,26 @@ const HeadsetController::Device *HeadsetController::device() const
 
 // Every command carries "-d": without it headsetcontrol applies it to every
 // connected headset (and in test mode, to the real ones besides the mock).
+// Old versions without "-d" only get a command when they list a single device.
 QStringList HeadsetController::deviceArgs() const
 {
     const Device *d = device();
     if (!d)
         return {};
-    QStringList args{QStringLiteral("-d"), d->selector};
+    QStringList args;
+    if (m_selection == DeviceSelection::Supported)
+        args << QStringLiteral("-d") << d->selector;
     if (s_testDevice)
         args.prepend(QStringLiteral("--test-device"));
     return args;
+}
+
+bool HeadsetController::canTarget() const
+{
+    if (!device())
+        return false;
+    return m_selection == DeviceSelection::Supported
+        || (m_selection == DeviceSelection::Unsupported && m_reportedDevices == 1);
 }
 
 QStringList HeadsetController::deviceNames() const
@@ -417,6 +440,21 @@ int HeadsetController::setting(const QString &key) const
     return jsonInt(v, s->min, s->max, -1);
 }
 
+bool HeadsetController::supports(const QString &key) const
+{
+    const Device *d = device();
+    if (!d)
+        return false;
+    if (key == QLatin1String("eq_preset"))
+        return d->caps.contains(QLatin1String("CAP_EQUALIZER_PRESET")) && !d->presetNames.isEmpty();
+    if (key == QLatin1String("eq_custom"))
+        return d->caps.contains(QLatin1String("CAP_EQUALIZER")) && d->eqBands > 0;
+    if (key == QLatin1String("notification"))
+        return d->caps.contains(QLatin1String("CAP_NOTIFICATION_SOUND"));
+    const Setting *s = findSetting(key);
+    return s && d->caps.contains(QLatin1String(s->cap));
+}
+
 void HeadsetController::apply(const QString &key, int value)
 {
     const Device *d = device();
@@ -480,8 +518,12 @@ void HeadsetController::playNotification()
 
 void HeadsetController::enqueue(Job job)
 {
-    if (!job.isRefresh && !job.args.contains(QStringLiteral("-d")))
-        return emit notify(tr("No headset selected"), true);
+    if (!job.isRefresh && !job.isProbe && !canTarget()) {
+        if (!device())
+            return emit notify(tr("No headset selected"), true);
+        return emit notify(tr("Several headsets are connected and this HeadsetControl version cannot pick one. "
+                              "Update HeadsetControl to 4.0 or newer."), true);
+    }
     m_queue.enqueue(std::move(job));
     emit busyChanged();
     if (!m_running)
@@ -498,7 +540,8 @@ void HeadsetController::runNext()
     }
     m_job = m_queue.dequeue();
     m_running = true;
-    m_process.setArguments(m_job.args + QStringList{QStringLiteral("-o"), QStringLiteral("json")});
+    m_process.setArguments(m_job.isProbe ? m_job.args
+                                         : m_job.args + QStringList{QStringLiteral("-o"), QStringLiteral("json")});
     m_killTimer.start();
     m_process.start(QIODevice::ReadOnly);
 }
@@ -506,10 +549,15 @@ void HeadsetController::runNext()
 void HeadsetController::handleFinished(const QByteArray &output, const QString &failure)
 {
     const Job job = std::exchange(m_job, Job{});
+    if (job.isProbe) {
+        m_selection = output.contains("--device") ? DeviceSelection::Supported : DeviceSelection::Unsupported;
+        return runNext();
+    }
     const QJsonObject root = QJsonDocument::fromJson(output).object();
     const QJsonArray devices = root.value(QStringLiteral("devices")).toArray();
 
     if (job.isRefresh) {
+        m_reportedDevices = int(devices.size());
         if (output.isEmpty() && !failure.isEmpty())
             setNoDevice(failure);
         else

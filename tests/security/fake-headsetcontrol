@@ -4,7 +4,12 @@
 DIR=$(dirname "$(readlink -f "$0")")
 SC=$(cat "$DIR/scenario")
 echo "$SC $*" >> "$DIR/calls.log"
-SET=0; for a in "$@"; do [ "$a" = "-d" ] && SET=1; done
+# "-h": the app asks whether "-d" is supported. Old versions (scenarios old_*) say no.
+if [ "$1" = "-h" ]; then
+  case "$SC" in old_*) echo "  -s, --sidetone LEVEL" ;; *) echo "  -d, --device VID:PID   Select device" ;; esac
+  exit 0
+fi
+SET=0; for a in "$@"; do case "$a" in -s|-l|-i|-v|-r|-p|-e|-n|--*limiter|--microphone-*|--bt-*|--noise-filter) SET=1 ;; esac; done
 HTML='<img src=\"http://127.0.0.1:18777/LEAK.png\"><b>bold</b>'
 dev() { # $1=vendor $2=product $3=name
 cat <<J
@@ -31,6 +36,10 @@ case "$SC" in
   regex_bomb)   printf '{"devices":[{"status":"success","device":"SteelSeries R","id_vendor":"0x1038","id_product":"0x0002","capabilities":["CAP_EQUALIZER_PRESET"],"equalizer_presets":{"'; head -c 900000 /dev/zero | tr '\0' 'a'; printf '":[1]}}]}' ;;
   actions_html) if [ $SET = 1 ]; then printf '{"actions":[{"capability":"X","device":"T","status":"error","error_message":"%s"}],"devices":[]}' "$HTML"
                 else printf '{"devices":['; dev 0xf00b 0xa00c "HeadsetControl Test device"; printf ']}'; fi ;;
+  old_one)      if [ $SET = 1 ]; then printf '{"actions":[{"capability":"X","device":"T","status":"success"}],"devices":[]}'
+                else printf '{"devices":['; dev 0xf00b 0xa00c "HeadsetControl Test device"; printf ']}'; fi ;;
+  old_two)      if [ $SET = 1 ]; then printf '{"actions":[{"capability":"X","device":"T","status":"success"}],"devices":[]}'
+                else printf '{"devices":['; dev 0xf00b 0xa00c "HeadsetControl Test device"; printf ','; dev 0x1038 0x2232 "SteelSeries Real"; printf ']}'; fi ;;
   ok|ok_test)   [ "$SC" = ok_test ] && V=0xf00b
                 if [ $SET = 1 ]; then printf '{"actions":[{"capability":"X","device":"T","status":"success","value":1}],"devices":[]}'
                 else printf '{"devices":['; dev $V 0xa00c "Fake"; printf ']}'; fi ;;

@@ -90,7 +90,11 @@ int runSelfTest(QApplication &app)
     };
 
     auto next = [&] {
-        if (++index >= steps.size())
+        // Settings this headset does not have are skipped, not failed (older
+        // HeadsetControl versions have a mock device with fewer features).
+        while (++index < steps.size() && !controller.supports(steps.at(index).name))
+            std::printf("SKIP %-16s %s\n", qPrintable(steps.at(index).name), "not supported by this headset");
+        if (index >= steps.size())
             return finish();
         steps.at(index).run();
     };

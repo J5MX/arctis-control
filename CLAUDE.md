@@ -27,6 +27,8 @@ microphone off through PipeWire (`pactl`), tray icon, low-battery notifications,
 | `i18n/arctis-control_es.ts` | Spanish translation (source strings are English) |
 | `tests/unit/` | QtTest unit tests (ctest) |
 | `tests/security/` | Security suite with fake `headsetcontrol` and fake `pactl` |
+| `tests/distros/run.sh` | Docker: builds, tests and installs on Arch, Fedora (COPR and stock 3.0), Debian 13, Ubuntu 26.04/24.04 |
+| `INSTALL.md` | Tested install steps per distribution |
 | `packaging/PKGBUILD` | Builds from the local checkout (`makepkg -si`) |
 | `packaging/aur/` | AUR PKGBUILD (downloads the GitHub release tarball) and its `.SRCINFO` |
 
@@ -75,6 +77,11 @@ QML-to-C++ coverage can be checked with a separate build configured with
 - Member destruction order: the `QProcess` destructor emits `finished()`; destructors disconnect
   and stop the process first.
 - `QStringLiteral` strings are UTF-16 in the binary (`strings -el` to find them).
+- Minimum Qt is 6.8 (Debian 13): do not use newer QML syntax such as `final` properties.
+- HeadsetControl 3.x has no `-d`: the app probes `headsetcontrol -h` for `--device` and then only
+  writes when a single device is listed. It may live in `/usr/bin` or `/usr/local/bin`.
+- Switching the PipeWire card profile (mic on/off) recreates the sink: browsers pause playback.
+- Wayland never reports the minimized state to apps (verified with KWin): no minimize-to-tray there.
 - Shell is zsh: quote URLs with `?`, `$c:a` is a modifier (use `${c}`), unquoted `$var` is not split.
 
 ## Releasing a version

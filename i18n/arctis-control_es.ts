@@ -77,74 +77,79 @@
         <translation>headsetcontrol no está instalado</translation>
     </message>
     <message>
-        <location filename="../src/headsetcontroller.cpp" line="425"/>
+        <location filename="../src/headsetcontroller.cpp" line="438"/>
         <source>Invalid setting</source>
         <translation>Ajuste no válido</translation>
     </message>
     <message>
-        <location filename="../src/headsetcontroller.cpp" line="427"/>
-        <location filename="../src/headsetcontroller.cpp" line="476"/>
+        <location filename="../src/headsetcontroller.cpp" line="440"/>
+        <location filename="../src/headsetcontroller.cpp" line="489"/>
         <source>This headset does not support that setting</source>
         <translation>Este auricular no admite ese ajuste</translation>
     </message>
     <message>
-        <location filename="../src/headsetcontroller.cpp" line="429"/>
-        <location filename="../src/headsetcontroller.cpp" line="459"/>
+        <location filename="../src/headsetcontroller.cpp" line="442"/>
+        <location filename="../src/headsetcontroller.cpp" line="472"/>
         <source>Value out of range (%1 to %2)</source>
         <translation>Valor fuera de rango (%1 a %2)</translation>
     </message>
     <message>
-        <location filename="../src/headsetcontroller.cpp" line="439"/>
+        <location filename="../src/headsetcontroller.cpp" line="452"/>
         <source>This headset has no presets</source>
         <translation>Este auricular no tiene presets</translation>
     </message>
     <message>
-        <location filename="../src/headsetcontroller.cpp" line="441"/>
+        <location filename="../src/headsetcontroller.cpp" line="454"/>
         <source>Invalid preset</source>
         <translation>Preset no válido</translation>
     </message>
     <message>
-        <location filename="../src/headsetcontroller.cpp" line="444"/>
+        <location filename="../src/headsetcontroller.cpp" line="457"/>
         <source>Preset “%1” applied</source>
         <translation>Preset «%1» aplicado</translation>
     </message>
     <message>
-        <location filename="../src/headsetcontroller.cpp" line="451"/>
+        <location filename="../src/headsetcontroller.cpp" line="464"/>
         <source>This headset has no equalizer</source>
         <translation>Este auricular no tiene ecualizador</translation>
     </message>
     <message>
-        <location filename="../src/headsetcontroller.cpp" line="453"/>
+        <location filename="../src/headsetcontroller.cpp" line="466"/>
         <source>The equalizer needs %1 bands</source>
         <translation>El ecualizador necesita %1 bandas</translation>
     </message>
     <message>
-        <location filename="../src/headsetcontroller.cpp" line="469"/>
+        <location filename="../src/headsetcontroller.cpp" line="482"/>
         <source>Equalizer applied</source>
         <translation>Ecualizador aplicado</translation>
     </message>
     <message>
-        <location filename="../src/headsetcontroller.cpp" line="478"/>
+        <location filename="../src/headsetcontroller.cpp" line="491"/>
         <source>Notification sound sent</source>
         <translation>Sonido de aviso enviado</translation>
     </message>
     <message>
-        <location filename="../src/headsetcontroller.cpp" line="484"/>
+        <location filename="../src/headsetcontroller.cpp" line="498"/>
         <source>No headset selected</source>
         <translation>No hay ningún auricular seleccionado</translation>
     </message>
     <message>
-        <location filename="../src/headsetcontroller.cpp" line="527"/>
+        <location filename="../src/headsetcontroller.cpp" line="499"/>
+        <source>Several headsets are connected and this HeadsetControl version cannot pick one. Update HeadsetControl to 4.0 or newer.</source>
+        <translation>Hay varios auriculares conectados y esta versión de HeadsetControl no puede elegir uno. Actualiza HeadsetControl a la 4.0 o posterior.</translation>
+    </message>
+    <message>
+        <location filename="../src/headsetcontroller.cpp" line="550"/>
         <source>The command failed</source>
         <translation>La orden falló</translation>
     </message>
     <message>
-        <location filename="../src/headsetcontroller.cpp" line="530"/>
+        <location filename="../src/headsetcontroller.cpp" line="553"/>
         <source>The headset did not respond</source>
         <translation>El auricular no respondió</translation>
     </message>
     <message>
-        <location filename="../src/headsetcontroller.cpp" line="621"/>
+        <location filename="../src/headsetcontroller.cpp" line="644"/>
         <source>No supported SteelSeries headset detected</source>
         <translation>No se detecta ningún auricular SteelSeries compatible</translation>
     </message>
@@ -196,8 +201,8 @@
     </message>
     <message>
         <location filename="../qml/Main.qml" line="241"/>
-        <location filename="../qml/Main.qml" line="756"/>
-        <location filename="../qml/Main.qml" line="767"/>
+        <location filename="../qml/Main.qml" line="764"/>
+        <location filename="../qml/Main.qml" line="775"/>
         <source>Hide to tray</source>
         <translation>Ocultar en la bandeja</translation>
     </message>
@@ -398,125 +403,130 @@
         <translation>Desactivado: el sistema no ve el micrófono del auricular.</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="709"/>
+        <location filename="../qml/Main.qml" line="688"/>
+        <source>Changing it restarts the headset sound for a moment: browsers and some players pause what is playing.</source>
+        <translation>Al cambiarlo, el sonido del auricular se reinicia un instante: los navegadores y algunos reproductores pausan lo que suena.</translation>
+    </message>
+    <message>
+        <location filename="../qml/Main.qml" line="717"/>
         <source>Sidetone</source>
         <translation>Sidetone</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="710"/>
+        <location filename="../qml/Main.qml" line="718"/>
         <source>How much you hear yourself through the headset</source>
         <translation>Cuánto te oyes a ti mismo por los auriculares</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="716"/>
+        <location filename="../qml/Main.qml" line="724"/>
         <source>Microphone volume</source>
         <translation>Volumen del micrófono</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="717"/>
+        <location filename="../qml/Main.qml" line="725"/>
         <source>Gain of the headset&apos;s own microphone</source>
         <translation>Ganancia del micro del propio auricular</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="723"/>
+        <location filename="../qml/Main.qml" line="731"/>
         <source>Mute LED brightness</source>
         <translation>Brillo del LED de silencio</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="724"/>
-        <location filename="../qml/Main.qml" line="730"/>
+        <location filename="../qml/Main.qml" line="732"/>
+        <location filename="../qml/Main.qml" line="738"/>
         <source>Off</source>
         <translation>Apagado</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="724"/>
-        <location filename="../qml/Main.qml" line="730"/>
+        <location filename="../qml/Main.qml" line="732"/>
+        <location filename="../qml/Main.qml" line="738"/>
         <source>Low</source>
         <translation>Bajo</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="724"/>
+        <location filename="../qml/Main.qml" line="732"/>
         <source>Medium</source>
         <translation>Medio</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="724"/>
-        <location filename="../qml/Main.qml" line="730"/>
+        <location filename="../qml/Main.qml" line="732"/>
+        <location filename="../qml/Main.qml" line="738"/>
         <source>High</source>
         <translation>Alto</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="729"/>
+        <location filename="../qml/Main.qml" line="737"/>
         <source>Noise filter</source>
         <translation>Filtro de ruido</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="735"/>
+        <location filename="../qml/Main.qml" line="743"/>
         <source>Rotate to mute</source>
         <translation>Silenciar al subir el micro</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="736"/>
+        <location filename="../qml/Main.qml" line="744"/>
         <source>Mutes when the boom is raised</source>
         <translation>Se silencia al levantar la varilla</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="742"/>
+        <location filename="../qml/Main.qml" line="750"/>
         <source>App</source>
         <translation>Aplicación</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="754"/>
+        <location filename="../qml/Main.qml" line="762"/>
         <source>When closing the window</source>
         <translation>Al cerrar la ventana</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="755"/>
+        <location filename="../qml/Main.qml" line="763"/>
         <source>In the tray the app keeps an icon next to the clock with the battery level.</source>
         <translation>En la bandeja, la app deja un icono junto al reloj con el nivel de batería.</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="756"/>
+        <location filename="../qml/Main.qml" line="764"/>
         <source>Quit</source>
         <translation>Salir</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="763"/>
+        <location filename="../qml/Main.qml" line="771"/>
         <source>When minimizing the window</source>
         <translation>Al minimizar la ventana</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="766"/>
+        <location filename="../qml/Main.qml" line="774"/>
         <source>Not available on Wayland, which does not tell apps when they are minimized. Use the “Hide to tray” button instead.</source>
         <translation>No disponible en Wayland, que no avisa a las apps cuando se minimizan. Usa en su lugar el botón «Ocultar en la bandeja».</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="767"/>
+        <location filename="../qml/Main.qml" line="775"/>
         <source>Taskbar</source>
         <translation>Barra de tareas</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="772"/>
+        <location filename="../qml/Main.qml" line="780"/>
         <source>Start at login</source>
         <translation>Abrir al iniciar sesión</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="773"/>
+        <location filename="../qml/Main.qml" line="781"/>
         <source>Starts hidden in the tray when you log in.</source>
         <translation>Arranca oculto en la bandeja al iniciar sesión.</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="774"/>
+        <location filename="../qml/Main.qml" line="782"/>
         <source>Opens the window when you log in.</source>
         <translation>Abre la ventana al iniciar sesión.</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="779"/>
+        <location filename="../qml/Main.qml" line="787"/>
         <source>Low battery notifications</source>
         <translation>Avisos de batería baja</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="780"/>
+        <location filename="../qml/Main.qml" line="788"/>
         <source>A desktop notification at 20 % and 10 %.</source>
         <translation>Una notificación del escritorio al 20 % y al 10 %.</translation>
     </message>

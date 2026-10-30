@@ -79,6 +79,19 @@ expected = "set-card-profile alsa_card.usb-Fake_Headset-00 output:analog-stereo+
 ok = len(sets) == 1 and sets[0].endswith(expected)
 failures += 0 if ok else 1
 print(f"{'PASS' if ok else 'FAIL'}  pactl: picks right profile   ({sets})")
+# Old HeadsetControl without "-d": writes only with a single listed device, never with two.
+calls_log = os.path.join(WORK, "calls.log")
+mark = len(open(calls_log).read().splitlines())
+run("old headsetcontrol, 1 device", "old_one", ["--test-device", "--self-test"], fresh_cfg("old-one"))
+mark2 = len(open(calls_log).read().splitlines())
+run("old headsetcontrol, 2 devices", "old_two", ["--test-device", "--self-test"], fresh_cfg("old-two"), expect_exit=14)
+new_calls = open(calls_log).read().splitlines()
+WRITE = r" -(s|l|i|v|r|p|e|n) | --(microphone|volume|bt|noise)"
+old_one_writes = [c for c in new_calls[mark:mark2] if re.search(WRITE, c)]
+old_two_writes = [c for c in new_calls[mark2:] if re.search(WRITE, c)]
+ok = len(old_one_writes) == 14 and not any(" -d " in c for c in old_one_writes) and not old_two_writes
+failures += 0 if ok else 1
+print(f"{'PASS' if ok else 'FAIL'}  old version targeting       ({len(old_one_writes)} writes with 1 device, {len(old_two_writes)} with 2)")
 run("pactl: set fails", "ok_test", ["--test-device", "--self-test"], fresh_cfg("mic-fail"), expect_exit=1, pactl="set_fail")
 for sc in ["garbage", "huge", "hang", "html", "dash_names"]:
     open(pactl_log, "w").close()
@@ -106,7 +119,8 @@ for name, prepare in states.items():
 
 # Every write command must target exactly one device with -d.
 calls = open(os.path.join(WORK, "calls.log")).read().splitlines()
-writes = [c for c in calls if re.search(r" -(s|l|i|v|r|p|e|n) | --(microphone|volume|bt|noise)", c)]
+writes = [c for c in calls if re.search(r" -(s|l|i|v|r|p|e|n) | --(microphone|volume|bt|noise)", c)
+          and not c.startswith("old_")]
 untargeted = [c for c in writes if " -d 0x" not in c]
 failures += 1 if untargeted else 0
 print(f"{'PASS' if not untargeted else 'FAIL'}  every write has -d          ({len(writes)} writes checked)")

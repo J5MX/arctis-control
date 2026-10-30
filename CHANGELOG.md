@@ -15,7 +15,18 @@ All notable changes to Arctis Control. Versions before 1.0 are previews.
 - Single instance: launching the app again shows the running window (session D-Bus).
 - Unit tests for the low-battery logic (ctest).
 
+- Works with HeadsetControl 3.x (Fedora's own package), which cannot choose a headset: settings
+  are applied only when a single headset is connected.
+- `INSTALL.md` with tested instructions for Arch, Fedora, Ubuntu 26.04 and Debian 13, and
+  `tests/distros/run.sh`, which builds, tests and installs the app on them with Docker.
+
+### Fixed
+- HeadsetControl installed from source (`/usr/local/bin`) was not found.
+- Building with Qt 6.8 (Debian 13) failed on a newer QML keyword.
+
 ### Changed
+- The microphone switch warns that changing it restarts the headset sound for a moment
+  (browsers may pause what is playing), since PipeWire recreates the card's devices.
 - While hidden, the headset is polled every 60 s instead of 20 s.
 - `compile_commands.json` is generated for clangd and editors.
 - The local PKGBUILD no longer replaces `nova5-panel`; clearer installation instructions.

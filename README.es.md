@@ -31,7 +31,11 @@ Pro Wireless, GameBuds, Nova 3, Nova 3P, Nova 5/5X, Nova 7, Nova 7P y Nova Pro W
 Probado en un Arctis Nova 5. El resto se ha probado con el auricular simulado de HeadsetControl
 (`--test-device`), que tiene todas las funciones. Si tienes otro modelo, se agradecen informes.
 
-## Instalación (Arch Linux / CachyOS)
+## Instalación
+
+Funciona en **Arch Linux / CachyOS, Fedora, Ubuntu 26.04 LTS y Debian 13** (Qt 6.8 o posterior).
+Los pasos para cada distribución, probados en sistemas limpios, están en
+**[INSTALL.md](INSTALL.md)** (en inglés; los comandos son los mismos). En Arch Linux / CachyOS:
 
 1. Instala las herramientas para compilar paquetes (en CachyOS casi siempre vienen ya):
    ```

@@ -11,7 +11,7 @@ ApplicationWindow {
     property bool eqDirty: false
     property bool inactiveKnown: false
     // Converted from C++ once per change instead of on every has() call.
-    final readonly property list<string> caps: HeadsetController.capabilities
+    readonly property list<string> caps: HeadsetController.capabilities
     readonly property list<string> standardFrequencies: ["32", "64", "125", "250", "500", "1k", "2k", "4k", "8k", "16k"]
 
     readonly property bool hasGeneral: has("CAP_INACTIVE_TIME") || has("CAP_VOLUME_LIMITER") || has("CAP_LIGHTS")
@@ -680,6 +680,14 @@ ApplicationWindow {
                                 : qsTr("Off: the system does not see the headset microphone.")
                             color: Theme.muted
                             font.pixelSize: 13
+                        }
+                        Text {
+                            textFormat: Text.PlainText
+                            Layout.fillWidth: true
+                            wrapMode: Text.WordWrap
+                            text: qsTr("Changing it restarts the headset sound for a moment: browsers and some players pause what is playing.")
+                            color: Theme.warn
+                            font.pixelSize: 12
                         }
                     }
                     Toggle {

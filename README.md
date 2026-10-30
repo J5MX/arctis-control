@@ -31,7 +31,11 @@ Pro Wireless, GameBuds, Nova 3, Nova 3P, Nova 5/5X, Nova 7, Nova 7P and Nova Pro
 Tested on an Arctis Nova 5. The other models have been tested with HeadsetControl's mock device
 (`--test-device`), which exposes every feature. Reports from owners of other models are welcome.
 
-## Installation (Arch Linux / CachyOS)
+## Installation
+
+Works on **Arch Linux / CachyOS, Fedora, Ubuntu 26.04 LTS and Debian 13** (Qt 6.8 or newer).
+Step-by-step commands for every distribution, all tested on clean systems, are in
+**[INSTALL.md](INSTALL.md)**. On Arch Linux / CachyOS:
 
 1. Install the tools needed to build packages (most CachyOS systems already have them):
    ```
@@ -79,7 +83,8 @@ cmake --build build
 | `src/` | `HeadsetController` (detects headsets, runs `headsetcontrol`, stores settings) and `HeadsetMic` (headset microphone on/off via `pactl`) |
 | `qml/` | User interface: window, cards, setting controls, battery ring, equalizer bands |
 | `i18n/` | Translations (source strings are in English) |
-| `tests/security/` | Security test suite and fake `headsetcontrol` |
+| `tests/security/` | Security test suite and fake `headsetcontrol` / `pactl` |
+| `tests/distros/` | Builds, tests and installs the app on other distributions with Docker |
 | `assets/` | Icon and headset illustration |
 | `packaging/` | `PKGBUILD` and `.desktop` launcher |
 
@@ -88,6 +93,7 @@ cmake --build build
 ```
 ./build/arctis-control --test-device --self-test   # functional test against the mock headset
 python3 tests/security/run.py                       # security tests (ASan + UBSan, a few minutes)
+tests/distros/run.sh                                # Arch, Fedora, Debian, Ubuntu in Docker (downloads images)
 ```
 
 The security suite builds the app against a fake `headsetcontrol` and a fake `pactl` (CMake

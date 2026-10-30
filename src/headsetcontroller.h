@@ -92,6 +92,9 @@ public:
     Q_INVOKABLE void refresh();
     // Last applied value of a simple setting (or the one read from the headset); -1 if unknown.
     Q_INVOKABLE int setting(const QString &key) const;
+    // Whether the selected headset has that setting ("eq_preset", "eq_custom",
+    // "notification" or a key of the setting table).
+    Q_INVOKABLE bool supports(const QString &key) const;
     Q_INVOKABLE void apply(const QString &key, int value);
     Q_INVOKABLE void setEqPreset(int index);
     Q_INVOKABLE void setEqCustom(const QList<double> &bands);
@@ -129,7 +132,13 @@ private:
         QString successMessage;
         bool isRefresh = false;
         QString deviceId; // headset whose saved state onSuccess updates
+        bool isProbe = false; // "headsetcontrol -h": does it support "-d"?
     };
+
+    // HeadsetControl 3.x (e.g. Fedora's own package) has no "-d" and always acts on
+    // the first headset it finds. Then writes are only allowed with a single one.
+    enum class DeviceSelection { Unknown, Supported, Unsupported };
+    bool canTarget() const;
 
     const Device *device() const;
     QStringList deviceArgs() const;
@@ -150,6 +159,8 @@ private:
 
     QList<Device> m_devices;
     int m_current = -1;
+    DeviceSelection m_selection = DeviceSelection::Unknown;
+    int m_reportedDevices = 0; // every device headsetcontrol lists, of any brand
     QString m_errorText;
     QString m_updatedText;
     bool m_background = false;
