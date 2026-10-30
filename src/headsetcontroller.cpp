@@ -2,6 +2,7 @@
 
 #include <QDir>
 #include <QFile>
+#include <QFileInfo>
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QRegularExpression>
@@ -10,6 +11,7 @@
 #include <QTime>
 
 #include <cmath>
+#include <utility>
 
 namespace {
 
@@ -17,6 +19,7 @@ const QString kHeadsetControl = QStringLiteral("/usr/bin/headsetcontrol");
 constexpr int kBands = 10;
 constexpr int kTimeoutMs = 20000;
 constexpr int kPollMs = 20000;
+constexpr qint64 kMaxOutput = 1 << 20; // la respuesta normal ocupa ~2 KiB
 
 QString stateDir()
 {
@@ -66,9 +69,18 @@ HeadsetController::HeadsetController(QObject *parent)
 
     connect(&m_process, &QProcess::finished, this, [this](int, QProcess::ExitStatus status) {
         m_killTimer.stop();
-        const QByteArray out = m_process.readAllStandardOutput();
-        const QString err = QString::fromUtf8(m_process.readAllStandardError()).trimmed();
+        const QByteArray out = m_process.read(kMaxOutput);
+        const QString err = QString::fromUtf8(m_process.readAllStandardError().left(4096)).trimmed();
+        if (m_process.bytesAvailable() > 0) {
+            m_process.readAll();
+            return handleFinished({}, tr("Respuesta de headsetcontrol demasiado grande"));
+        }
         handleFinished(out, status == QProcess::CrashExit ? tr("headsetcontrol no respondió") : err);
+    });
+    // Corta en cuanto la salida pasa del límite, en lugar de acumularla en memoria.
+    connect(&m_process, &QProcess::readyReadStandardOutput, this, [this] {
+        if (m_process.bytesAvailable() > kMaxOutput)
+            m_process.kill();
     });
     connect(&m_process, &QProcess::errorOccurred, this, [this](QProcess::ProcessError error) {
         if (error == QProcess::FailedToStart) {
@@ -79,18 +91,29 @@ HeadsetController::HeadsetController(QObject *parent)
 
     m_pollTimer.setInterval(kPollMs);
     connect(&m_pollTimer, &QTimer::timeout, this, &HeadsetController::refresh);
-    m_pollTimer.start();
 
     loadState();
-    refresh();
+    setPolling(true);
 }
 
-QVariantList HeadsetController::eqCustom() const
+void HeadsetController::setPolling(bool enabled)
 {
-    QVariantList list;
-    for (double v : m_eqCustom)
-        list << v;
-    return list;
+    if (enabled == m_pollTimer.isActive())
+        return;
+    if (enabled) {
+        m_pollTimer.start();
+        refresh(); // al volver a la ventana, datos al momento
+    } else {
+        m_pollTimer.stop();
+    }
+    emit pollingChanged();
+}
+
+QList<double> HeadsetController::activeBands() const
+{
+    if (m_eqPreset >= 0 && m_eqPreset < m_presetBands.size())
+        return m_presetBands.at(m_eqPreset);
+    return m_eqCustom;
 }
 
 void HeadsetController::refresh()
@@ -106,24 +129,22 @@ void HeadsetController::refresh()
 
 void HeadsetController::setEqPreset(int index)
 {
-    if (index < 0 || index >= m_presets.size())
+    if (index < 0 || index >= m_presetNames.size())
         return emit notify(tr("Preset no válido"), true);
-    const QString name = m_presets.at(index).toMap().value(QStringLiteral("name")).toString();
+    const QString name = m_presetNames.at(index);
     enqueue({{QStringLiteral("-p"), QString::number(index)},
              [this, index] { m_eqPreset = index; },
              tr("Preset «%1» aplicado").arg(name)});
 }
 
-void HeadsetController::setEqCustom(const QVariantList &bands)
+void HeadsetController::setEqCustom(const QList<double> &bands)
 {
     if (bands.size() != kBands)
         return emit notify(tr("El ecualizador necesita 10 bandas"), true);
     QList<double> values;
     QStringList parts;
-    for (const QVariant &band : bands) {
-        bool ok = false;
-        const double v = band.toDouble(&ok);
-        if (!ok || !std::isfinite(v) || v < -10.0 || v > 10.0)
+    for (const double v : bands) {
+        if (!std::isfinite(v) || v < -10.0 || v > 10.0)
             return emit notify(tr("Valor fuera de rango (-10 a 10)"), true);
         const double rounded = std::round(v * 2.0) / 2.0;
         values << rounded;
@@ -176,7 +197,7 @@ void HeadsetController::runNext()
 
 void HeadsetController::handleFinished(const QByteArray &output, const QString &failure)
 {
-    const Job job = m_current;
+    const Job job = std::exchange(m_current, Job{});
     const QJsonObject root = QJsonDocument::fromJson(output).object();
     const QJsonArray devices = root.value(QStringLiteral("devices")).toArray();
 
@@ -213,33 +234,44 @@ void HeadsetController::handleFinished(const QByteArray &output, const QString &
 
 void HeadsetController::applyStatus(const QJsonObject &device, const QByteArray &rawOutput)
 {
+    const QJsonObject battery = device.value(QStringLiteral("battery")).toObject();
+    const QString status = battery.value(QStringLiteral("status")).toString();
+    const int level = qBound(-1, battery.value(QStringLiteral("level")).toInt(-1), 100);
+    const QString updated = QTime::currentTime().toString(QStringLiteral("HH:mm"));
+    const bool changed = !m_connected || level != m_batteryLevel || status != m_batteryStatus
+        || updated != m_updatedText;
+
     m_connected = true;
     m_errorText.clear();
-
-    const QJsonObject battery = device.value(QStringLiteral("battery")).toObject();
-    m_batteryStatus = battery.value(QStringLiteral("status")).toString();
-    m_batteryLevel = battery.value(QStringLiteral("level")).toInt(-1);
-    m_updatedText = QTime::currentTime().toString(QStringLiteral("HH:mm"));
+    m_batteryStatus = status;
+    m_batteryLevel = level;
+    m_updatedText = updated;
 
     const QJsonObject presets = device.value(QStringLiteral("equalizer_presets")).toObject();
-    if (m_presets.isEmpty() && !presets.isEmpty()) {
+    if (m_presetNames.isEmpty() && !presets.isEmpty()) {
         const QStringList order = presetOrder(rawOutput);
         for (const QString &name : order) {
             const QJsonArray values = presets.value(name).toArray();
             if (values.size() != kBands)
                 continue;
-            QVariantList bands;
+            QList<double> bands;
             for (const QJsonValue &v : values)
                 bands << v.toDouble();
-            m_presets << QVariantMap{{QStringLiteral("name"), name}, {QStringLiteral("bands"), bands}};
+            m_presetNames << name;
+            m_presetBands << bands;
         }
         emit presetsChanged();
+        if (m_eqPreset >= 0)
+            emit stateChanged(); // las bandas del preset activo ya se conocen
     }
-    emit statusChanged();
+    if (changed)
+        emit statusChanged();
 }
 
 void HeadsetController::setDisconnected(const QString &reason)
 {
+    if (!m_connected && m_errorText == reason)
+        return;
     m_connected = false;
     m_errorText = reason;
     m_batteryLevel = -1;
@@ -249,6 +281,10 @@ void HeadsetController::setDisconnected(const QString &reason)
 
 void HeadsetController::loadState()
 {
+    // Solo un archivo normal: un FIFO bloquearía la apertura.
+    const QFileInfo info(stateFile());
+    if (!info.isFile() || info.isSymLink())
+        return;
     QFile file(stateFile());
     if (!file.open(QIODevice::ReadOnly))
         return;

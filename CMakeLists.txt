@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.21)
-project(nova5-panel VERSION 0.2.0 LANGUAGES CXX)
+project(nova5-panel VERSION 0.2.1 LANGUAGES CXX)
 
-find_package(Qt6 6.8 REQUIRED COMPONENTS Gui Qml Quick QuickControls2)
+find_package(Qt6 6.8 REQUIRED COMPONENTS Gui Network Qml Quick QuickControls2)
 qt_standard_project_setup(REQUIRES 6.8)
 
 qt_add_executable(nova5-panel src/main.cpp)
@@ -30,7 +30,9 @@ qt_add_qml_module(nova5-panel
 target_include_directories(nova5-panel PRIVATE src)
 target_compile_definitions(nova5-panel PRIVATE NOVA5_VERSION="${PROJECT_VERSION}")
 target_compile_options(nova5-panel PRIVATE -Wall -Wextra -Wpedantic)
-target_link_libraries(nova5-panel PRIVATE Qt6::Gui Qt6::Qml Qt6::Quick Qt6::QuickControls2)
+target_link_libraries(nova5-panel PRIVATE Qt6::Gui Qt6::Network Qt6::Qml Qt6::Quick Qt6::QuickControls2)
+# Sin RUNPATH ($ORIGIN): el binario solo carga bibliotecas del sistema.
+set_target_properties(nova5-panel PROPERTIES INSTALL_RPATH "")
 
 include(GNUInstallDirs)
 install(TARGETS nova5-panel RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})

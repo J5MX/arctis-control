@@ -19,7 +19,9 @@ Button {
     opacity: enabled ? 1 : 0.5
 
     contentItem: Text {
-        text: control.text.toUpperCase()
+        textFormat: Text.PlainText
+        text: control.text
+        font.capitalization: Font.AllUppercase
         color: control.primary ? Theme.bg : control.active ? Theme.accent : Theme.text
         font.family: Theme.display
         font.pixelSize: 12
@@ -35,7 +37,6 @@ Button {
 
         Shape {
             anchors.fill: parent
-            preferredRendererType: Shape.CurveRenderer
             ShapePath {
                 strokeWidth: 0
                 fillColor: control.primary

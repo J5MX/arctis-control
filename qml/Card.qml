@@ -15,7 +15,6 @@ Item {
 
     Shape {
         anchors.fill: parent
-        preferredRendererType: Shape.CurveRenderer
 
         ShapePath {
             strokeColor: Theme.line
@@ -59,7 +58,9 @@ Item {
                 }
             }
             Text {
-                text: card.title.toUpperCase()
+                textFormat: Text.PlainText
+                text: card.title
+                font.capitalization: Font.AllUppercase
                 color: Theme.text
                 font.family: Theme.display
                 font.pixelSize: 13

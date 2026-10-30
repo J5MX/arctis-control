@@ -21,8 +21,9 @@ Item {
         height: width
         radius: width / 2
         color: "transparent"
-        border.color: Qt.rgba(ring.tone.r, ring.tone.g, ring.tone.b, ring.level < 0 ? 0 : 0.12)
+        border.color: ring.tone
         border.width: 7
+        opacity: ring.level < 0 ? 0 : 0.12
     }
 
     Shape {
@@ -56,6 +57,7 @@ Item {
     }
 
     Text {
+        textFormat: Text.PlainText
         anchors.centerIn: parent
         text: ring.level < 0 ? "–" : ring.level + "%"
         color: Theme.text

@@ -5,7 +5,7 @@
 #include <QProcess>
 #include <QQueue>
 #include <QTimer>
-#include <QVariantList>
+#include <QStringList>
 #include <QtQml/qqmlregistration.h>
 
 #include <functional>
@@ -23,12 +23,15 @@ class HeadsetController : public QObject
     Q_PROPERTY(int batteryLevel READ batteryLevel NOTIFY statusChanged)
     Q_PROPERTY(QString batteryStatus READ batteryStatus NOTIFY statusChanged)
     Q_PROPERTY(QString updatedText READ updatedText NOTIFY statusChanged)
-    Q_PROPERTY(QVariantList presets READ presets NOTIFY presetsChanged)
+    Q_PROPERTY(QStringList presetNames READ presetNames NOTIFY presetsChanged)
     Q_PROPERTY(int eqPreset READ eqPreset NOTIFY stateChanged)
-    Q_PROPERTY(QVariantList eqCustom READ eqCustom NOTIFY stateChanged)
+    // Bandas que muestra el ecualizador: las del preset activo o la curva personalizada.
+    Q_PROPERTY(QList<double> activeBands READ activeBands NOTIFY stateChanged)
     Q_PROPERTY(int volumeLimiter READ volumeLimiter NOTIFY stateChanged)
     Q_PROPERTY(int inactiveTime READ inactiveTime NOTIFY stateChanged)
     Q_PROPERTY(bool busy READ busy NOTIFY busyChanged)
+    // La interfaz lo desactiva con la ventana minimizada para no lanzar procesos en balde.
+    Q_PROPERTY(bool polling READ polling WRITE setPolling NOTIFY pollingChanged)
 
 public:
     explicit HeadsetController(QObject *parent = nullptr);
@@ -38,16 +41,18 @@ public:
     int batteryLevel() const { return m_batteryLevel; }
     QString batteryStatus() const { return m_batteryStatus; }
     QString updatedText() const { return m_updatedText; }
-    QVariantList presets() const { return m_presets; }
+    QStringList presetNames() const { return m_presetNames; }
     int eqPreset() const { return m_eqPreset; }
-    QVariantList eqCustom() const;
+    QList<double> activeBands() const;
     int volumeLimiter() const { return m_volumeLimiter; }
     int inactiveTime() const { return m_inactiveTime; }
     bool busy() const { return m_running || !m_queue.isEmpty(); }
+    bool polling() const { return m_pollTimer.isActive(); }
+    void setPolling(bool enabled);
 
     Q_INVOKABLE void refresh();
     Q_INVOKABLE void setEqPreset(int index);
-    Q_INVOKABLE void setEqCustom(const QVariantList &bands);
+    Q_INVOKABLE void setEqCustom(const QList<double> &bands);
     Q_INVOKABLE void setVolumeLimiter(bool enabled);
     Q_INVOKABLE void setInactiveTime(int minutes);
 
@@ -56,6 +61,7 @@ signals:
     void presetsChanged();
     void stateChanged();
     void busyChanged();
+    void pollingChanged();
     void notify(const QString &message, bool error);
 
 private:
@@ -86,7 +92,8 @@ private:
     int m_batteryLevel = -1;
     QString m_batteryStatus;
     QString m_updatedText;
-    QVariantList m_presets;
+    QStringList m_presetNames;
+    QList<QList<double>> m_presetBands;
 
     // Último valor aplicado; HeadsetControl no permite leerlos del auricular.
     int m_eqPreset = -1;

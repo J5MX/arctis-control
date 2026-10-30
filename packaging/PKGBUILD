@@ -4,7 +4,7 @@
 # Uso:  cd packaging && makepkg -si
 
 pkgname=nova5-panel
-pkgver=0.2.0
+pkgver=0.2.1
 pkgrel=1
 pkgdesc="Panel no oficial para los SteelSeries Arctis Nova 5: batería, ecualizador y ajustes (HeadsetControl)"
 arch=('x86_64')

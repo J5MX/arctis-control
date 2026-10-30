@@ -1,10 +1,39 @@
 #include <QCommandLineParser>
 #include <QGuiApplication>
 #include <QIcon>
+#include <QNetworkAccessManager>
+#include <QNetworkRequest>
 #include <QQmlApplicationEngine>
+#include <QQmlNetworkAccessManagerFactory>
 #include <QQuickStyle>
 #include <QQuickWindow>
 #include <QTimer>
+
+namespace {
+
+// La app no necesita red. Si algún texto o imagen intentara cargar una URL,
+// la petición falla sin salir del equipo: solo se permiten recursos qrc.
+class OfflineAccessManager : public QNetworkAccessManager
+{
+public:
+    using QNetworkAccessManager::QNetworkAccessManager;
+
+protected:
+    QNetworkReply *createRequest(Operation op, const QNetworkRequest &request, QIODevice *data) override
+    {
+        if (request.url().scheme() == QLatin1String("qrc"))
+            return QNetworkAccessManager::createRequest(op, request, data);
+        return QNetworkAccessManager::createRequest(op, QNetworkRequest(QUrl()), data);
+    }
+};
+
+class OfflineFactory : public QQmlNetworkAccessManagerFactory
+{
+public:
+    QNetworkAccessManager *create(QObject *parent) override { return new OfflineAccessManager(parent); }
+};
+
+} // namespace
 
 int main(int argc, char *argv[])
 {
@@ -30,6 +59,8 @@ int main(int argc, char *argv[])
     parser.process(app);
 
     QQmlApplicationEngine engine;
+    OfflineFactory offline;
+    engine.setNetworkAccessManagerFactory(&offline);
     QObject::connect(
         &engine, &QQmlApplicationEngine::objectCreationFailed, &app,
         [] { QCoreApplication::exit(1); }, Qt::QueuedConnection);

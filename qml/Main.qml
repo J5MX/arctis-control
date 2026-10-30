@@ -1,3 +1,5 @@
+pragma ComponentBehavior: Bound
+
 import QtQuick
 import QtQuick.Controls.Basic
 import QtQuick.Layouts
@@ -6,8 +8,7 @@ import QtQuick.Shapes
 ApplicationWindow {
     id: root
 
-    readonly property var frequencies: ["32", "64", "125", "250", "500", "1k", "2k", "4k", "8k", "16k"]
-    readonly property var presetNames: ({ flat: "Plano", bass: "Graves", focus: "Enfoque", smiley: "Smiley" })
+    readonly property list<string> frequencies: ["32", "64", "125", "250", "500", "1k", "2k", "4k", "8k", "16k"]
     property bool eqDirty: false
 
     width: 1000
@@ -20,15 +21,26 @@ ApplicationWindow {
     font.family: "Noto Sans"
     font.pixelSize: 14
 
-    function setBands(values) {
-        for (let i = 0; i < bands.count && i < values.length; ++i)
-            bands.itemAt(i).value = values[i]
+    function presetLabel(name: string): string {
+        switch (name) {
+        case "flat": return "Plano"
+        case "bass": return "Graves"
+        case "focus": return "Enfoque"
+        case "smiley": return "Smiley"
+        default: return name
+        }
     }
 
-    function bandValues() {
-        const values = []
+    function setBands(values: list<real>) {
+        const n = Math.min(bands.count, values.length)
+        for (let i = 0; i < n; ++i)
+            (bands.itemAt(i) as EqBand).value = values[i]
+    }
+
+    function bandValues(): list<real> {
+        let values = []
         for (let i = 0; i < bands.count; ++i)
-            values.push(bands.itemAt(i).value)
+            values.push((bands.itemAt(i) as EqBand).value)
         return values
     }
 
@@ -36,18 +48,15 @@ ApplicationWindow {
     function syncControls() {
         limiter.checked = HeadsetController.volumeLimiter === 1
         inactive.currentIndex = Math.max(0, inactive.indexOfValue(HeadsetController.inactiveTime))
-        if (eqDirty)
-            return
-        const preset = HeadsetController.eqPreset
-        const presets = HeadsetController.presets
-        setBands(preset >= 0 && preset < presets.length ? presets[preset].bands : HeadsetController.eqCustom)
+        if (!eqDirty)
+            setBands(HeadsetController.activeBands)
     }
 
     Connections {
         target: HeadsetController
         function onStateChanged() { root.syncControls() }
         function onPresetsChanged() { root.syncControls() }
-        function onNotify(message, error) {
+        function onNotify(message: string, error: bool) {
             toast.show(message, error)
             if (error)
                 root.syncControls()
@@ -55,6 +64,13 @@ ApplicationWindow {
     }
 
     Component.onCompleted: syncControls()
+
+    // No se consulta el auricular con la ventana minimizada.
+    Binding {
+        target: HeadsetController
+        property: "polling"
+        value: root.visible && root.visibility !== Window.Minimized
+    }
 
     // Resplandor naranja en la esquina superior derecha
     Shape {
@@ -65,7 +81,7 @@ ApplicationWindow {
                 centerX: root.width; centerY: -40
                 centerRadius: 520
                 focalX: centerX; focalY: centerY
-                GradientStop { position: 0; color: Qt.rgba(1, 0.32, 0, 0.10) }
+                GradientStop { position: 0; color: "#1aff5200" }
                 GradientStop { position: 1; color: "transparent" }
             }
             PathRectangle { width: root.width; height: root.height }
@@ -91,6 +107,7 @@ ApplicationWindow {
             ColumnLayout {
                 spacing: 4
                 Text {
+                    textFormat: Text.PlainText
                     text: "STEELSERIES"
                     color: Theme.accent
                     font.family: Theme.display
@@ -99,6 +116,7 @@ ApplicationWindow {
                     font.letterSpacing: 3.5
                 }
                 Text {
+                    textFormat: Text.PlainText
                     text: "ARCTIS NOVA 5"
                     color: Theme.text
                     font.family: Theme.display
@@ -116,7 +134,6 @@ ApplicationWindow {
                 implicitHeight: 28
                 Shape {
                     anchors.fill: parent
-                    preferredRendererType: Shape.CurveRenderer
                     ShapePath {
                         strokeWidth: 0
                         fillColor: Theme.cardHi
@@ -134,6 +151,7 @@ ApplicationWindow {
                     color: HeadsetController.connected ? Theme.accent : Theme.bad
                 }
                 Text {
+                    textFormat: Text.PlainText
                     id: pillText
                     x: 28
                     anchors.verticalCenter: parent.verticalCenter
@@ -164,6 +182,7 @@ ApplicationWindow {
         contentWidth: availableWidth
 
         GridLayout {
+            id: grid
             width: parent.width - 48
             x: 24
             y: 22
@@ -187,6 +206,7 @@ ApplicationWindow {
                     fillMode: Image.PreserveAspectFit
                 }
                 Text {
+                    textFormat: Text.PlainText
                     Layout.alignment: Qt.AlignHCenter
                     text: "Inalámbrico 2,4 GHz · dongle USB-C"
                     color: Theme.muted
@@ -211,6 +231,7 @@ ApplicationWindow {
                         Layout.fillWidth: true
                         spacing: 4
                         Text {
+                            textFormat: Text.PlainText
                             Layout.fillWidth: true
                             wrapMode: Text.WordWrap
                             text: !HeadsetController.connected ? HeadsetController.errorText || "Sin datos"
@@ -224,6 +245,7 @@ ApplicationWindow {
                             font.letterSpacing: 0.9
                         }
                         Text {
+                            textFormat: Text.PlainText
                             visible: HeadsetController.updatedText !== ""
                             text: "Actualizado " + HeadsetController.updatedText
                             color: Theme.muted
@@ -246,8 +268,9 @@ ApplicationWindow {
                         Layout.fillWidth: true
                         Layout.preferredWidth: 1
                         spacing: 2
-                        Text { text: "Limitador de volumen"; color: Theme.text; font.weight: Font.Medium }
+                        Text { textFormat: Text.PlainText; text: "Limitador de volumen"; color: Theme.text; font.weight: Font.Medium }
                         Text {
+                            textFormat: Text.PlainText
                             Layout.fillWidth: true
                             wrapMode: Text.WordWrap
                             text: "Protege los oídos de picos fuertes"
@@ -271,24 +294,24 @@ ApplicationWindow {
                         Layout.fillWidth: true
                         Layout.preferredWidth: 1
                         spacing: 2
-                        Text { text: "Apagado automático"; color: Theme.text; font.weight: Font.Medium }
-                        Text { text: "Tras este tiempo sin uso"; color: Theme.muted; font.pixelSize: 13 }
+                        Text { textFormat: Text.PlainText; text: "Apagado automático"; color: Theme.text; font.weight: Font.Medium }
+                        Text { textFormat: Text.PlainText; text: "Tras este tiempo sin uso"; color: Theme.muted; font.pixelSize: 13 }
                     }
                     ComboBox {
                         id: inactive
                         enabled: !HeadsetController.busy && HeadsetController.connected
-                        textRole: "text"
+                        textRole: "label"
                         valueRole: "value"
-                        model: [
-                            { text: "Nunca", value: 0 },
-                            { text: "1 min", value: 1 },
-                            { text: "5 min", value: 5 },
-                            { text: "10 min", value: 10 },
-                            { text: "15 min", value: 15 },
-                            { text: "30 min", value: 30 },
-                            { text: "60 min", value: 60 },
-                            { text: "90 min", value: 90 }
-                        ]
+                        model: ListModel {
+                            ListElement { label: "Nunca"; value: 0 }
+                            ListElement { label: "1 min"; value: 1 }
+                            ListElement { label: "5 min"; value: 5 }
+                            ListElement { label: "10 min"; value: 10 }
+                            ListElement { label: "15 min"; value: 15 }
+                            ListElement { label: "30 min"; value: 30 }
+                            ListElement { label: "60 min"; value: 60 }
+                            ListElement { label: "90 min"; value: 90 }
+                        }
                         onActivated: HeadsetController.setInactiveTime(currentValue)
                         implicitWidth: 100
                         implicitHeight: 34
@@ -302,6 +325,7 @@ ApplicationWindow {
                             }
                         }
                         contentItem: Text {
+                            textFormat: Text.PlainText
                             leftPadding: 12
                             text: inactive.displayText
                             color: Theme.text
@@ -311,30 +335,34 @@ ApplicationWindow {
                             verticalAlignment: Text.AlignVCenter
                         }
                         indicator: Text {
+                            textFormat: Text.PlainText
                             x: inactive.width - width - 10
                             anchors.verticalCenter: parent.verticalCenter
                             text: "▾"
                             color: Theme.accent
                         }
                         delegate: ItemDelegate {
-                            required property var modelData
+                            id: entry
+                            required property string label
                             required property int index
                             width: inactive.width
-                            highlighted: inactive.highlightedIndex === index
+                            highlighted: inactive.highlightedIndex === entry.index
                             contentItem: Text {
-                                text: parent.modelData.text
-                                color: parent.highlighted ? Theme.accent : Theme.text
+                                textFormat: Text.PlainText
+                                text: entry.label
+                                color: entry.highlighted ? Theme.accent : Theme.text
                                 font.family: Theme.display
                                 font.pixelSize: 13
                                 font.weight: Font.DemiBold
                             }
-                            background: Rectangle { color: parent.highlighted ? Theme.accentDim : Theme.cardHi }
+                            background: Rectangle { color: entry.highlighted ? Theme.accentDim : Theme.cardHi }
                         }
                         popup.background: Rectangle { color: Theme.cardHi; border.color: Theme.line }
                     }
                 }
 
                 Text {
+                    textFormat: Text.PlainText
                     Layout.fillWidth: true
                     visible: HeadsetController.volumeLimiter < 0
                     wrapMode: Text.WordWrap
@@ -348,22 +376,23 @@ ApplicationWindow {
             Card {
                 title: "Ecualizador"
                 Layout.fillWidth: true
-                Layout.columnSpan: parent.columns
+                Layout.columnSpan: grid.columns
 
                 Flow {
                     Layout.fillWidth: true
                     spacing: 8
                     Repeater {
-                        model: HeadsetController.presets
+                        model: HeadsetController.presetNames
                         CutButton {
-                            required property var modelData
+                            id: presetButton
+                            required property string modelData
                             required property int index
-                            text: root.presetNames[modelData.name] || modelData.name
-                            active: !root.eqDirty && HeadsetController.eqPreset === index
+                            text: root.presetLabel(presetButton.modelData)
+                            active: !root.eqDirty && HeadsetController.eqPreset === presetButton.index
                             enabled: !HeadsetController.busy && HeadsetController.connected
                             onClicked: {
                                 root.eqDirty = false
-                                HeadsetController.setEqPreset(index)
+                                HeadsetController.setEqPreset(presetButton.index)
                             }
                         }
                     }
@@ -381,8 +410,8 @@ ApplicationWindow {
                         x: 1
                         width: parent.width - 2
                         height: 1
-                        y: bandRow.y + (bands.count > 0 && bands.itemAt(0) ? bands.itemAt(0).sliderCenter : 0)
-                        color: Qt.rgba(1, 0.32, 0, 0.25)
+                        y: bandRow.y + ((bands.itemAt(0) as EqBand)?.sliderCenter ?? 0)
+                        color: "#40ff5200"
                     }
 
                     RowLayout {
@@ -394,9 +423,10 @@ ApplicationWindow {
                             id: bands
                             model: root.frequencies
                             EqBand {
+                                id: band
                                 required property string modelData
                                 Layout.fillWidth: true
-                                label: modelData
+                                label: band.modelData
                                 onMoved: root.eqDirty = true
                             }
                         }
@@ -427,13 +457,14 @@ ApplicationWindow {
                 }
 
                 Text {
+                    textFormat: Text.PlainText
                     text: "10 bandas de −10 a +10 dB en pasos de 0,5. Las frecuencias son orientativas."
                     color: Theme.muted
                     font.pixelSize: 12
                 }
             }
 
-            Item { Layout.columnSpan: parent.columns; implicitHeight: 6 }
+            Item { Layout.columnSpan: grid.columns; implicitHeight: 6 }
         }
     }
 
@@ -443,8 +474,8 @@ ApplicationWindow {
 
         property bool error: false
 
-        function show(message, isError) {
-            toastText.text = message.toUpperCase()
+        function show(message: string, isError: bool) {
+            toastText.text = message
             error = isError
             opacity = 1
             hideTimer.restart()
@@ -462,8 +493,10 @@ ApplicationWindow {
 
         Rectangle { width: 3; height: parent.height; color: toast.error ? Theme.bad : Theme.accent }
         Text {
+            textFormat: Text.PlainText
             id: toastText
             anchors.centerIn: parent
+            font.capitalization: Font.AllUppercase
             color: toast.error ? Theme.bad : Theme.text
             font.family: Theme.display
             font.pixelSize: 13

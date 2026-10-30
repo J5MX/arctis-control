@@ -11,11 +11,20 @@ ColumnLayout {
     readonly property real sliderCenter: slider.y + slider.height / 2
     signal moved()
 
+    function format(v: real): string {
+        const sign = v > 0 ? "+" : v < 0 ? "-" : ""
+        const a = Math.abs(v)
+        const whole = Math.floor(a)
+        const tenth = Math.round((a - whole) * 10)
+        return sign + whole + (tenth > 0 ? "," + tenth : "")
+    }
+
     spacing: 8
 
     Text {
+        textFormat: Text.PlainText
         Layout.alignment: Qt.AlignHCenter
-        text: (slider.value > 0 ? "+" : "") + slider.value.toLocaleString(Qt.locale("es_ES"), "f", slider.value % 1 === 0 ? 0 : 1)
+        text: band.format(slider.value)
         color: Theme.accent
         font.family: Theme.display
         font.pixelSize: 12
@@ -66,6 +75,7 @@ ColumnLayout {
     }
 
     Text {
+        textFormat: Text.PlainText
         Layout.alignment: Qt.AlignHCenter
         text: band.label
         color: Theme.muted

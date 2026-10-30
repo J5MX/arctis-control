@@ -13,7 +13,7 @@ QtObject {
     readonly property color muted: "#85858f"
     readonly property color accent: "#ff5200"
     readonly property color accentHi: "#ff7a33"
-    readonly property color accentDim: Qt.rgba(1, 0.32, 0, 0.14)
+    readonly property color accentDim: "#24ff5200"
     readonly property color warn: "#ffb020"
     readonly property color bad: "#ff3b3b"
 

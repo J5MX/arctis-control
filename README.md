@@ -45,15 +45,21 @@ ventana); útil para revisar cambios de interfaz.
 
 ## Seguridad
 
-- No abre sockets ni hace conexiones de red: no hay nada que atacar desde fuera.
+- No abre sockets ni hace conexiones de red: no hay nada que atacar desde fuera. Además, el
+  motor QML usa un gestor de red que rechaza cualquier URL que no sea un recurso interno (qrc).
+- Todos los textos se muestran como texto plano (`Text.PlainText`): un mensaje con HTML, por
+  ejemplo un `<img src="http://…">` en un error de `headsetcontrol`, no se interpreta ni carga nada.
 - `headsetcontrol` se ejecuta con ruta absoluta (`/usr/bin/headsetcontrol`), argumentos en
   lista (sin shell), entorno mínimo y un tiempo límite de 20 s; las órdenes van de una en una.
+  Si su salida supera 1 MiB se corta y se descarta.
 - Todos los valores se validan (lista cerrada de acciones, tipos y rangos) antes de llamarlo.
 - La interfaz QML va compilada dentro del binario; no carga archivos externos.
 - El estado se guarda en `~/.config/nova5-panel/state.json` (0600, escritura atómica) y al
   leerlo se acotan los valores. Es el mismo formato que usaba la versión web.
 - El paquete se compila con las opciones de endurecimiento de `makepkg` (PIE, RELRO completo,
-  `_FORTIFY_SOURCE`, protector de pila).
+  `_FORTIFY_SOURCE`, protector de pila, CET) y sin RUNPATH.
+- Al compilar con `makepkg` se usan las `CFLAGS` del sistema: en CachyOS pueden exigir una CPU
+  concreta (p. ej. x86-64-v4). Para otro equipo, compila el paquete en ese equipo.
 
 ## Limitaciones
 
