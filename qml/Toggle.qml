@@ -1,13 +1,13 @@
 import QtQuick
 import QtQuick.Controls.Basic
 
-// Interruptor cuadrado que se enciende en naranja.
+// Square switch that lights up orange.
 Switch {
     id: control
 
     padding: 0
     spacing: 0
-    // Sin texto ni relleno, Basic calcularía un ancho de 0.
+    // With no text or padding, Basic would compute a width of 0.
     implicitWidth: indicator.implicitWidth
     implicitHeight: indicator.implicitHeight
 

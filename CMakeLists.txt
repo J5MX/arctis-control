@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.21)
-project(arctis-control VERSION 0.3.0 LANGUAGES CXX)
+project(arctis-control VERSION 0.4.0 LANGUAGES CXX)
 
-find_package(Qt6 6.8 REQUIRED COMPONENTS Gui Network Qml Quick QuickControls2)
+find_package(Qt6 6.8 REQUIRED COMPONENTS Gui Network Qml Quick QuickControls2 LinguistTools)
 qt_standard_project_setup(REQUIRES 6.8)
 
 qt_add_executable(arctis-control src/main.cpp)
@@ -34,8 +34,15 @@ target_include_directories(arctis-control PRIVATE src)
 target_compile_definitions(arctis-control PRIVATE APP_VERSION="${PROJECT_VERSION}")
 target_compile_options(arctis-control PRIVATE -Wall -Wextra -Wpedantic)
 target_link_libraries(arctis-control PRIVATE Qt6::Gui Qt6::Network Qt6::Qml Qt6::Quick Qt6::QuickControls2)
-# Sin RUNPATH ($ORIGIN): el binario solo carga bibliotecas del sistema.
+# No RUNPATH ($ORIGIN): the binary only loads system libraries.
 set_target_properties(arctis-control PROPERTIES INSTALL_RPATH "")
+
+# UI translations (source strings in English), embedded under :/i18n.
+qt_add_translations(arctis-control
+    TS_FILES i18n/arctis-control_es.ts
+    SOURCE_TARGETS arctis-control
+    LUPDATE_OPTIONS -no-obsolete
+)
 
 include(GNUInstallDirs)
 install(TARGETS arctis-control RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})

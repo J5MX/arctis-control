@@ -2,7 +2,7 @@ import QtQuick
 import QtQuick.Layouts
 import QtQuick.Shapes
 
-// Tarjeta con esquinas cortadas en diagonal y título con barrita naranja.
+// Card with diagonally cut corners and a title with a small orange bar.
 Item {
     id: card
 

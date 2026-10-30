@@ -34,16 +34,16 @@ ApplicationWindow {
 
     function presetLabel(name: string): string {
         switch (name) {
-        case "flat": return "Plano"
-        case "bass": return "Graves"
-        case "focus": return "Enfoque"
-        case "smiley": return "Smiley"
+        case "flat": return qsTr("Flat")
+        case "bass": return qsTr("Bass")
+        case "focus": return qsTr("Focus")
+        case "smiley": return qsTr("Smiley")
         default: return name.charAt(0).toUpperCase() + name.slice(1)
         }
     }
 
     function number(value: real): string {
-        return String(value).replace(".", ",")
+        return String(value).replace(".", Qt.locale().decimalPoint)
     }
 
     function bandLabel(index: int): string {
@@ -63,7 +63,7 @@ ApplicationWindow {
         return values
     }
 
-    // El auricular no deja leer la mayoría de ajustes: se muestran los últimos aplicados.
+    // The headset cannot report most settings: show the last ones applied.
     function syncControls() {
         inactive.currentIndex = Math.max(0, inactive.indexOfValue(HeadsetController.setting("inactive_time")))
         if (!eqDirty)
@@ -75,7 +75,7 @@ ApplicationWindow {
         function onStateChanged() { root.syncControls() }
         function onDeviceChanged() {
             root.eqDirty = false
-            Qt.callLater(root.syncControls) // tras crear las bandas del nuevo auricular
+            Qt.callLater(root.syncControls) // after the new headset's bands exist
         }
         function onNotify(message: string, error: bool) {
             toast.show(message, error)
@@ -86,14 +86,14 @@ ApplicationWindow {
 
     Component.onCompleted: syncControls()
 
-    // No se consulta el auricular con la ventana minimizada.
+    // Do not poll the headset while the window is minimized.
     Binding {
         target: HeadsetController
         property: "polling"
         value: root.visible && root.visibility !== Window.Minimized
     }
 
-    // Resplandor naranja en la esquina superior derecha
+    // Orange glow in the top-right corner
     Shape {
         anchors.fill: parent
         ShapePath {
@@ -149,7 +149,7 @@ ApplicationWindow {
             }
             Item { Layout.fillWidth: true }
 
-            // Selector si hay más de un auricular conectado
+            // Picker when more than one headset is connected
             ComboBox {
                 id: devicePicker
                 visible: HeadsetController.deviceNames.length > 1
@@ -180,7 +180,7 @@ ApplicationWindow {
                 }
             }
 
-            // Estado de conexión
+            // Connection status
             Item {
                 id: pill
                 implicitWidth: pillText.implicitWidth + 40
@@ -208,7 +208,7 @@ ApplicationWindow {
                     id: pillText
                     x: 28
                     anchors.verticalCenter: parent.verticalCenter
-                    text: HeadsetController.connected ? "CONECTADO" : "DESCONECTADO"
+                    text: HeadsetController.connected ? qsTr("CONNECTED") : qsTr("DISCONNECTED")
                     color: HeadsetController.connected ? Theme.accent : Theme.bad
                     font.family: Theme.display
                     font.pixelSize: 11
@@ -243,10 +243,10 @@ ApplicationWindow {
             columnSpacing: 16
             rowSpacing: 16
 
-            // Sin auricular: qué hacer
+            // No headset: what to check
             Card {
                 visible: !HeadsetController.connected
-                title: "Ningún auricular detectado"
+                title: qsTr("No headset detected")
                 Layout.fillWidth: true
                 Layout.columnSpan: grid.columns
 
@@ -254,7 +254,7 @@ ApplicationWindow {
                     textFormat: Text.PlainText
                     Layout.fillWidth: true
                     wrapMode: Text.WordWrap
-                    text: HeadsetController.errorText || "Buscando auriculares…"
+                    text: HeadsetController.errorText || qsTr("Looking for headsets…")
                     color: Theme.text
                 }
                 Text {
@@ -263,14 +263,14 @@ ApplicationWindow {
                     wrapMode: Text.WordWrap
                     color: Theme.muted
                     lineHeight: 1.3
-                    text: "• Conecta el receptor USB (o el cable) y enciende el auricular.\n"
-                        + "• Comprueba que HeadsetControl lo ve: headsetcontrol -b\n"
-                        + "• Si dice que no tiene permisos, reconecta el receptor tras instalar headsetcontrol (instala reglas udev).\n"
-                        + "• Compatibles: Arctis 1, 7, 7+, 7X, 7P, 9, Pro (2019 y Wireless), GameBuds y Nova 3, 3P, 5, 5X, 7, 7P y Pro Wireless."
+                    text: qsTr("• Plug in the USB receiver (or the cable) and turn the headset on.\n"
+                        + "• Check that HeadsetControl sees it: headsetcontrol -b\n"
+                        + "• If it reports missing permissions, replug the receiver after installing headsetcontrol (it installs udev rules).\n"
+                        + "• Supported: Arctis 1, 7, 7+, 7X, 7P, 9, Pro (2019 and Wireless), GameBuds and Nova 3, 3P, 5, 5X, 7, 7P and Pro Wireless.")
                 }
             }
 
-            // Ilustración y datos del auricular
+            // Headset illustration and details
             Card {
                 visible: HeadsetController.connected
                 Layout.fillWidth: true
@@ -299,9 +299,9 @@ ApplicationWindow {
                     textFormat: Text.PlainText
                     Layout.alignment: Qt.AlignHCenter
                     text: "USB " + HeadsetController.deviceId
-                        // ChatMix solo si la mezcla no está centrada (si se está usando).
+                        // ChatMix only when the mix is off-centre (i.e. actually in use).
                         + (root.has("CAP_CHATMIX_STATUS") && HeadsetController.chatmix >= 0 && HeadsetController.chatmix !== 64
-                           ? " · ChatMix " + (HeadsetController.chatmix < 64 ? "juego " : "chat ")
+                           ? " · ChatMix " + (HeadsetController.chatmix < 64 ? qsTr("game") : qsTr("chat")) + " "
                              + Math.round(Math.abs(HeadsetController.chatmix - 64) / 64 * 100) + " %" : "")
                     color: Theme.muted
                     font.pixelSize: 12
@@ -311,7 +311,7 @@ ApplicationWindow {
 
             Card {
                 visible: HeadsetController.connected
-                title: "Batería"
+                title: qsTr("Battery")
                 Layout.fillWidth: true
                 Layout.fillHeight: true
                 Layout.preferredWidth: 1
@@ -329,10 +329,10 @@ ApplicationWindow {
                             textFormat: Text.PlainText
                             Layout.fillWidth: true
                             wrapMode: Text.WordWrap
-                            text: !root.has("CAP_BATTERY_STATUS") ? "Con cable"
-                                : HeadsetController.batteryStatus === "BATTERY_CHARGING" ? "⚡ Cargando"
-                                : HeadsetController.batteryLevel >= 0 ? "En uso"
-                                : "Apagado o fuera de alcance"
+                            text: !root.has("CAP_BATTERY_STATUS") ? qsTr("Wired")
+                                : HeadsetController.batteryStatus === "BATTERY_CHARGING" ? qsTr("⚡ Charging")
+                                : HeadsetController.batteryLevel >= 0 ? qsTr("In use")
+                                : qsTr("Off or out of range")
                             color: Theme.text
                             font.family: Theme.display
                             font.pixelSize: 15
@@ -343,14 +343,14 @@ ApplicationWindow {
                         Text {
                             textFormat: Text.PlainText
                             visible: HeadsetController.batteryMinutes > 0
-                            text: "≈ " + Math.floor(HeadsetController.batteryMinutes / 60) + " h "
-                                + HeadsetController.batteryMinutes % 60 + " min restantes"
+                            text: qsTr("≈ %1 h %2 min left").arg(Math.floor(HeadsetController.batteryMinutes / 60))
+                                .arg(HeadsetController.batteryMinutes % 60)
                             color: Theme.text
                         }
                         Text {
                             textFormat: Text.PlainText
                             visible: HeadsetController.updatedText !== ""
-                            text: "Actualizado " + HeadsetController.updatedText
+                            text: qsTr("Updated %1").arg(HeadsetController.updatedText)
                             color: Theme.muted
                         }
                     }
@@ -360,7 +360,7 @@ ApplicationWindow {
 
             Card {
                 visible: HeadsetController.connected && root.hasGeneral
-                title: "Ajustes"
+                title: qsTr("Settings")
                 Layout.fillWidth: true
                 Layout.fillHeight: true
                 Layout.preferredWidth: 1
@@ -373,8 +373,8 @@ ApplicationWindow {
                         Layout.fillWidth: true
                         Layout.preferredWidth: 1
                         spacing: 2
-                        Text { textFormat: Text.PlainText; text: "Apagado automático"; color: Theme.text; font.weight: Font.Medium }
-                        Text { textFormat: Text.PlainText; text: "Tras este tiempo sin uso"; color: Theme.muted; font.pixelSize: 13 }
+                        Text { textFormat: Text.PlainText; text: qsTr("Auto power-off"); color: Theme.text; font.weight: Font.Medium }
+                        Text { textFormat: Text.PlainText; text: qsTr("After this long without use"); color: Theme.muted; font.pixelSize: 13 }
                     }
                     ComboBox {
                         id: inactive
@@ -382,7 +382,7 @@ ApplicationWindow {
                         textRole: "label"
                         valueRole: "value"
                         model: ListModel {
-                            ListElement { label: "Nunca"; value: 0 }
+                            ListElement { label: QT_TR_NOOP("Never"); value: 0 }
                             ListElement { label: "1 min"; value: 1 }
                             ListElement { label: "5 min"; value: 5 }
                             ListElement { label: "10 min"; value: 10 }
@@ -406,7 +406,7 @@ ApplicationWindow {
                         contentItem: Text {
                             textFormat: Text.PlainText
                             leftPadding: 12
-                            text: HeadsetController.setting("inactive_time") < 0 && HeadsetController.connected ? "—" : inactive.displayText
+                            text: HeadsetController.setting("inactive_time") < 0 && HeadsetController.connected ? "—" : qsTr(inactive.displayText)
                             color: Theme.text
                             font.family: Theme.display
                             font.pixelSize: 13
@@ -428,7 +428,7 @@ ApplicationWindow {
                             highlighted: inactive.highlightedIndex === entry.index
                             contentItem: Text {
                                 textFormat: Text.PlainText
-                                text: entry.label
+                                text: qsTr(entry.label)
                                 color: entry.highlighted ? Theme.accent : Theme.text
                                 font.family: Theme.display
                                 font.pixelSize: 13
@@ -443,36 +443,36 @@ ApplicationWindow {
                 SettingSwitch {
                     visible: root.has("CAP_VOLUME_LIMITER")
                     key: "volume_limiter"
-                    title: "Limitador de volumen"
-                    subtitle: "Protege los oídos de picos fuertes"
+                    title: qsTr("Volume limiter")
+                    subtitle: qsTr("Protects your ears from loud peaks")
                 }
                 SettingSwitch {
                     visible: root.has("CAP_LIGHTS")
                     key: "lights"
-                    title: "Luces"
-                    subtitle: "Iluminación del auricular"
+                    title: qsTr("Lights")
+                    subtitle: qsTr("Headset lighting")
                 }
                 SettingSwitch {
                     visible: root.has("CAP_VOICE_PROMPTS")
                     key: "voice_prompts"
-                    title: "Avisos de voz"
-                    subtitle: "Mensajes hablados al encender o cambiar de modo"
+                    title: qsTr("Voice prompts")
+                    subtitle: qsTr("Spoken messages when powering on or switching modes")
                 }
                 SettingSwitch {
                     visible: root.has("CAP_BT_WHEN_POWERED_ON")
                     key: "bt_powered_on"
-                    title: "Bluetooth al encender"
-                    subtitle: "Activa el Bluetooth junto con el auricular"
+                    title: qsTr("Bluetooth on power-up")
+                    subtitle: qsTr("Turns Bluetooth on together with the headset")
                 }
                 SettingSlider {
                     visible: root.has("CAP_BT_CALL_VOLUME")
                     key: "bt_call_volume"
-                    title: "Volumen de llamadas Bluetooth"
+                    title: qsTr("Bluetooth call volume")
                     to: 100
                 }
                 CutButton {
                     visible: root.has("CAP_NOTIFICATION_SOUND")
-                    text: "Probar sonido de aviso"
+                    text: qsTr("Play notification sound")
                     enabled: !HeadsetController.busy
                     onClicked: HeadsetController.playNotification()
                 }
@@ -481,7 +481,7 @@ ApplicationWindow {
                     textFormat: Text.PlainText
                     Layout.fillWidth: true
                     wrapMode: Text.WordWrap
-                    text: "El auricular no deja leer estos ajustes: se muestra el último aplicado desde aquí."
+                    text: qsTr("The headset cannot report these settings: the last value applied from here is shown.")
                     color: Theme.muted
                     font.pixelSize: 12
                 }
@@ -490,7 +490,7 @@ ApplicationWindow {
 
             Card {
                 visible: HeadsetController.connected && root.hasEq
-                title: "Ecualizador"
+                title: qsTr("Equalizer")
                 Layout.fillWidth: true
                 Layout.columnSpan: grid.columns
 
@@ -523,7 +523,7 @@ ApplicationWindow {
                     color: "#0d0d10"
                     border.color: Theme.line
 
-                    // Línea de 0 dB a la altura del centro de los deslizadores
+                    // 0 dB line at the height of the sliders' centre
                     Rectangle {
                         x: 1
                         width: parent.width - 2
@@ -563,21 +563,22 @@ ApplicationWindow {
                         textFormat: Text.PlainText
                         Layout.fillWidth: true
                         wrapMode: Text.WordWrap
-                        text: HeadsetController.eqBands + " bandas de " + root.number(HeadsetController.eqMin) + " a +"
-                            + root.number(HeadsetController.eqMax) + " dB en pasos de " + root.number(HeadsetController.eqStep)
-                            + (HeadsetController.eqBands === 10 ? ". Frecuencias orientativas." : ".")
+                        text: qsTr("%1 bands from %2 to +%3 dB in steps of %4.").arg(HeadsetController.eqBands)
+                            .arg(root.number(HeadsetController.eqMin)).arg(root.number(HeadsetController.eqMax))
+                            .arg(root.number(HeadsetController.eqStep))
+                            + (HeadsetController.eqBands === 10 ? " " + qsTr("Frequencies are approximate.") : "")
                         color: Theme.muted
                         font.pixelSize: 12
                     }
                     CutButton {
-                        text: "Poner a 0"
+                        text: qsTr("Reset to 0")
                         onClicked: {
                             root.setBands(new Array(bands.count).fill(0))
                             root.eqDirty = true
                         }
                     }
                     CutButton {
-                        text: "Aplicar ecualizador"
+                        text: qsTr("Apply equalizer")
                         primary: true
                         enabled: !HeadsetController.busy
                         onClicked: {
@@ -590,7 +591,7 @@ ApplicationWindow {
 
             Card {
                 visible: HeadsetController.connected && root.hasMic
-                title: "Micrófono"
+                title: qsTr("Microphone")
                 Layout.fillWidth: true
                 Layout.columnSpan: grid.columns
 
@@ -603,34 +604,34 @@ ApplicationWindow {
                     SettingSlider {
                         visible: root.has("CAP_SIDETONE")
                         key: "sidetone"
-                        title: "Sidetone"
-                        subtitle: "Cuánto te oyes a ti mismo por los auriculares"
+                        title: qsTr("Sidetone")
+                        subtitle: qsTr("How much you hear yourself through the headset")
                         to: 128
                     }
                     SettingSlider {
                         visible: root.has("CAP_MICROPHONE_VOLUME")
                         key: "mic_volume"
-                        title: "Volumen del micrófono"
-                        subtitle: "Ganancia del micro del propio auricular"
+                        title: qsTr("Microphone volume")
+                        subtitle: qsTr("Gain of the headset's own microphone")
                         to: 128
                     }
                     SettingChoice {
                         visible: root.has("CAP_MICROPHONE_MUTE_LED_BRIGHTNESS")
                         key: "mic_led"
-                        title: "Brillo del LED de silencio"
-                        options: ["Apagado", "Bajo", "Medio", "Alto"]
+                        title: qsTr("Mute LED brightness")
+                        options: [qsTr("Off"), qsTr("Low"), qsTr("Medium"), qsTr("High")]
                     }
                     SettingChoice {
                         visible: root.has("CAP_NOISE_FILTER")
                         key: "noise_filter"
-                        title: "Filtro de ruido"
-                        options: ["No", "Bajo", "Alto"]
+                        title: qsTr("Noise filter")
+                        options: [qsTr("Off"), qsTr("Low"), qsTr("High")]
                     }
                     SettingSwitch {
                         visible: root.has("CAP_ROTATE_TO_MUTE")
                         key: "rotate_to_mute"
-                        title: "Silenciar al subir el micro"
-                        subtitle: "Se silencia al levantar la varilla"
+                        title: qsTr("Rotate to mute")
+                        subtitle: qsTr("Mutes when the boom is raised")
                     }
                 }
             }
@@ -639,7 +640,7 @@ ApplicationWindow {
         }
     }
 
-    // Aviso temporal
+    // Temporary notification
     Rectangle {
         id: toast
 

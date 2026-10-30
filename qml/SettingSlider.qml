@@ -2,7 +2,7 @@ import QtQuick
 import QtQuick.Controls.Basic
 import QtQuick.Layouts
 
-// Ajuste numérico. Se aplica al soltar el deslizador, no mientras se arrastra.
+// Numeric setting. Applied when the slider is released, not while dragging.
 ColumnLayout {
     id: row
 
@@ -29,7 +29,7 @@ ColumnLayout {
     Connections {
         target: HeadsetController
         function onStateChanged() { row.sync() }
-        // Algunos auriculares informan del valor actual (p. ej. el sidetone).
+        // Some headsets report the current value (e.g. sidetone).
         function onStatusChanged() { row.sync() }
         function onNotify(message: string, error: bool) { if (error) row.sync() }
     }

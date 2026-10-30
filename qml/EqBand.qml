@@ -2,7 +2,7 @@ import QtQuick
 import QtQuick.Controls.Basic
 import QtQuick.Layouts
 
-// Banda del ecualizador: deslizador vertical con el rango que admita el auricular.
+// Equalizer band: vertical slider using the range the headset accepts.
 ColumnLayout {
     id: band
 
@@ -19,7 +19,7 @@ ColumnLayout {
         const a = Math.abs(v)
         const whole = Math.floor(a)
         const tenth = Math.round((a - whole) * 10)
-        return sign + whole + (tenth > 0 ? "," + tenth : "")
+        return sign + whole + (tenth > 0 ? Qt.locale().decimalPoint + tenth : "")
     }
 
     spacing: 8
@@ -53,7 +53,7 @@ ColumnLayout {
             height: slider.availableHeight
 
             Rectangle { anchors.fill: parent; radius: 2; color: "#2a2a31" }
-            // Relleno naranja desde 0 dB hasta el tirador
+            // Orange fill from 0 dB to the handle
             Rectangle {
                 readonly property real center: parent.height / 2
                 readonly property real handleY: slider.visualPosition * parent.height

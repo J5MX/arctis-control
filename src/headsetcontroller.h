@@ -11,9 +11,9 @@
 
 #include <functional>
 
-// Puente entre la interfaz QML y HeadsetControl. Detecta los auriculares
-// SteelSeries conectados, expone lo que admite cada uno y ejecuta
-// /usr/bin/headsetcontrol con argumentos validados (sin shell), de uno en uno.
+// Bridge between the QML UI and HeadsetControl. Detects the connected SteelSeries
+// headsets, exposes what each one supports and runs /usr/bin/headsetcontrol with
+// validated arguments (no shell), one command at a time.
 class HeadsetController : public QObject
 {
     Q_OBJECT
@@ -40,17 +40,17 @@ class HeadsetController : public QObject
     Q_PROPERTY(double eqMax READ eqMax NOTIFY deviceChanged)
     Q_PROPERTY(double eqStep READ eqStep NOTIFY deviceChanged)
     Q_PROPERTY(int eqPreset READ eqPreset NOTIFY stateChanged)
-    // Bandas que muestra el ecualizador: las del preset activo o la curva personalizada.
+    // Bands shown by the equalizer: the active preset's or the custom curve.
     Q_PROPERTY(QList<double> activeBands READ activeBands NOTIFY stateChanged)
 
     Q_PROPERTY(bool busy READ busy NOTIFY busyChanged)
-    // La interfaz lo desactiva con la ventana minimizada para no lanzar procesos en balde.
+    // The UI turns it off while minimized so no processes are spawned for nothing.
     Q_PROPERTY(bool polling READ polling WRITE setPolling NOTIFY pollingChanged)
 
 public:
     explicit HeadsetController(QObject *parent = nullptr);
 
-    // Modo de desarrollo: usa el dispositivo simulado de HeadsetControl.
+    // Development mode: use HeadsetControl's mock device.
     static void setTestDevice(bool enabled);
 
     bool connected() const { return m_current >= 0; }
@@ -81,7 +81,7 @@ public:
     void setPolling(bool enabled);
 
     Q_INVOKABLE void refresh();
-    // Último valor aplicado de un ajuste simple (o el leído del auricular); -1 si no se sabe.
+    // Last applied value of a simple setting (or the one read from the headset); -1 if unknown.
     Q_INVOKABLE int setting(const QString &key) const;
     Q_INVOKABLE void apply(const QString &key, int value);
     Q_INVOKABLE void setEqPreset(int index);
@@ -99,8 +99,8 @@ signals:
 
 private:
     struct Device {
-        QString id;       // "1038:2232": clave de los ajustes guardados
-        QString selector; // "0x1038:0x2232": formato que exige «headsetcontrol -d»
+        QString id;       // "1038:2232": key of the saved settings
+        QString selector; // "0x1038:0x2232": the format "headsetcontrol -d" requires
         QString name; // "Arctis Nova (5/5X)"
         QStringList caps;
         QJsonObject status;
@@ -138,7 +138,7 @@ private:
     QString m_errorText;
     QString m_updatedText;
 
-    // Últimos valores aplicados por dispositivo ("1038:2232" → {clave: valor}).
-    // HeadsetControl no permite leer la mayoría de ajustes del auricular.
+    // Last applied values per device ("1038:2232" → {key: value}).
+    // HeadsetControl cannot read most settings back from the headset.
     QHash<QString, QJsonObject> m_state;
 };

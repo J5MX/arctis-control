@@ -3,7 +3,7 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Layouts
 
-// Ajuste con pocas opciones (0, 1, 2…): una fila de botones.
+// Setting with a few options (0, 1, 2…): a row of buttons.
 ColumnLayout {
     id: row
 

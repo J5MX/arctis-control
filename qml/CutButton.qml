@@ -2,7 +2,7 @@ import QtQuick
 import QtQuick.Controls.Basic
 import QtQuick.Shapes
 
-// Botón con corte biselado en dos esquinas.
+// Button with two bevelled corners.
 Button {
     id: control
 

@@ -1,6 +1,7 @@
 #include <QCommandLineParser>
 #include <QGuiApplication>
 #include <QIcon>
+#include <QLocale>
 #include <QNetworkAccessManager>
 #include <QNetworkRequest>
 #include <QQmlApplicationEngine>
@@ -8,6 +9,7 @@
 #include <QQuickStyle>
 #include <QQuickWindow>
 #include <QTimer>
+#include <QTranslator>
 
 #include "headsetcontroller.h"
 
@@ -16,8 +18,8 @@
 
 namespace {
 
-// La app no necesita red. Si algún texto o imagen intentara cargar una URL,
-// la petición falla sin salir del equipo: solo se permiten recursos qrc.
+// The app needs no network. If any text or image tried to load a URL, the
+// request fails without leaving the machine: only qrc resources are allowed.
 class OfflineAccessManager : public QNetworkAccessManager
 {
 public:
@@ -38,8 +40,8 @@ public:
     QNetworkAccessManager *create(QObject *parent) override { return new OfflineAccessManager(parent); }
 };
 
-// Prueba automática contra el auricular simulado: aplica cada ajuste con el
-// mismo código que usa la interfaz y comprueba que headsetcontrol lo acepta.
+// Automated test against the mock headset: applies every setting through the
+// same code the UI uses and checks that headsetcontrol accepts it.
 int runSelfTest(QGuiApplication &app)
 {
     HeadsetController controller;
@@ -69,16 +71,16 @@ int runSelfTest(QGuiApplication &app)
         if (index < 0)
             return;
         failures += error ? 1 : 0;
-        std::printf("%-4s %-16s %s\n", error ? "MAL" : "OK", qPrintable(steps.at(index).name), qPrintable(message));
+        std::printf("%-4s %-16s %s\n", error ? "FAIL" : "OK", qPrintable(steps.at(index).name), qPrintable(message));
         next();
     });
     QObject::connect(&controller, &HeadsetController::deviceChanged, &app, [&] {
         if (index >= 0 || !controller.connected())
             return;
-        std::printf("Dispositivo: %s (%s)\n", qPrintable(controller.deviceName()), qPrintable(controller.deviceId()));
+        std::printf("Device: %s (%s)\n", qPrintable(controller.deviceName()), qPrintable(controller.deviceId()));
         next();
     });
-    QTimer::singleShot(60000, &app, [] { std::printf("Tiempo agotado\n"); QCoreApplication::exit(99); });
+    QTimer::singleShot(60000, &app, [] { std::printf("Timed out\n"); QCoreApplication::exit(99); });
     return QGuiApplication::exec();
 }
 
@@ -86,37 +88,42 @@ int runSelfTest(QGuiApplication &app)
 
 int main(int argc, char *argv[])
 {
-    // Estilo Basic: es el que permite personalizar por completo los controles.
+    // The Basic style is the one that allows fully customizing the controls.
     QQuickStyle::setStyle(QStringLiteral("Basic"));
 
     QGuiApplication app(argc, argv);
+
+    // UI in English; translated to the system language when available (e.g. Spanish).
+    QTranslator translator;
+    if (translator.load(QLocale(), QStringLiteral("arctis-control"), QStringLiteral("_"), QStringLiteral(":/i18n")))
+        QCoreApplication::installTranslator(&translator);
     QGuiApplication::setApplicationName(QStringLiteral("arctis-control"));
     QGuiApplication::setApplicationVersion(QStringLiteral(APP_VERSION));
-    // Enlaza la ventana con arctis-control.desktop (icono en la barra de tareas en Wayland).
+    // Links the window to arctis-control.desktop (taskbar icon on Wayland).
     QGuiApplication::setDesktopFileName(QStringLiteral("arctis-control"));
     QGuiApplication::setWindowIcon(QIcon(QStringLiteral(":/qt/qml/ArctisControl/assets/icon.svg")));
 
     QCommandLineParser parser;
-    parser.setApplicationDescription(QStringLiteral("Panel para auriculares SteelSeries Arctis (vía HeadsetControl)"));
+    parser.setApplicationDescription(QStringLiteral("Control panel for SteelSeries Arctis headsets (via HeadsetControl)"));
     parser.addHelpOption();
     parser.addVersionOption();
-    // Para desarrollo: guarda una captura de la ventana y sale. Útil con QT_QPA_PLATFORM=offscreen.
+    // Development: save a screenshot of the window and exit. Useful with QT_QPA_PLATFORM=offscreen.
     const QCommandLineOption screenshot(QStringLiteral("screenshot"),
-                                        QStringLiteral("Guarda una captura PNG de la ventana y sale."),
-                                        QStringLiteral("archivo"));
+                                        QStringLiteral("Save a PNG screenshot of the window and exit."),
+                                        QStringLiteral("file"));
     parser.addOption(screenshot);
-    // Para desarrollo: usa el auricular simulado de HeadsetControl, que tiene todas las funciones.
+    // Development: use HeadsetControl's mock headset, which has every feature.
     const QCommandLineOption testDevice(QStringLiteral("test-device"),
-                                        QStringLiteral("Usa el auricular simulado de HeadsetControl."));
+                                        QStringLiteral("Use HeadsetControl's mock headset only."));
     parser.addOption(testDevice);
     const QCommandLineOption selfTest(QStringLiteral("self-test"),
-                                      QStringLiteral("Con --test-device: aplica todos los ajustes al simulado y sale."));
+                                      QStringLiteral("With --test-device: apply every setting to the mock and exit."));
     parser.addOption(selfTest);
     parser.process(app);
     HeadsetController::setTestDevice(parser.isSet(testDevice));
     if (parser.isSet(selfTest)) {
         if (!parser.isSet(testDevice)) {
-            std::fprintf(stderr, "--self-test solo funciona junto a --test-device\n");
+            std::fprintf(stderr, "--self-test only works together with --test-device\n");
             return 2;
         }
         return runSelfTest(app);
@@ -133,7 +140,7 @@ int main(int argc, char *argv[])
     if (parser.isSet(screenshot) && !engine.rootObjects().isEmpty()) {
         auto *window = qobject_cast<QQuickWindow *>(engine.rootObjects().constFirst());
         const QString path = parser.value(screenshot);
-        window->resize(1000, 1500); // que quepa todo en la captura
+        window->resize(1000, 1500); // fit everything in the screenshot
         QTimer::singleShot(3000, &app, [window, path] {
             QCoreApplication::exit(window && window->grabWindow().save(path) ? 0 : 1);
         });

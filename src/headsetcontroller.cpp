@@ -1,5 +1,6 @@
 #include "headsetcontroller.h"
 
+#include <QCoreApplication>
 #include <QDir>
 #include <QFile>
 #include <QFileInfo>
@@ -20,13 +21,13 @@ const QString kSteelSeriesVendor = QStringLiteral("0x1038");
 const QString kTestVendor = QStringLiteral("0xf00b");
 constexpr int kTimeoutMs = 20000;
 constexpr int kPollMs = 20000;
-constexpr qint64 kMaxOutput = 1 << 20; // la respuesta normal ocupa unos pocos KiB
+constexpr qint64 kMaxOutput = 1 << 20; // a normal reply is a few KiB
 constexpr int kMaxBands = 32;
 
 bool s_testDevice = false;
 
-// Ajustes de un solo valor entero: clave interna, capacidad que lo habilita,
-// opción de headsetcontrol, rango admitido y nombre para los avisos.
+// Single-integer settings: internal key, capability that enables it,
+// headsetcontrol option, accepted range and the label used in notifications.
 struct Setting {
     const char *key;
     const char *cap;
@@ -37,17 +38,17 @@ struct Setting {
 };
 
 constexpr Setting kSettings[] = {
-    {"sidetone", "CAP_SIDETONE", "-s", 0, 128, "Sidetone"},
-    {"lights", "CAP_LIGHTS", "-l", 0, 1, "Luces"},
-    {"inactive_time", "CAP_INACTIVE_TIME", "-i", 0, 90, "Apagado automático"},
-    {"voice_prompts", "CAP_VOICE_PROMPTS", "-v", 0, 1, "Avisos de voz"},
-    {"rotate_to_mute", "CAP_ROTATE_TO_MUTE", "-r", 0, 1, "Silenciar al subir el micro"},
-    {"mic_led", "CAP_MICROPHONE_MUTE_LED_BRIGHTNESS", "--microphone-mute-led-brightness", 0, 3, "LED de silencio"},
-    {"mic_volume", "CAP_MICROPHONE_VOLUME", "--microphone-volume", 0, 128, "Volumen del micro"},
-    {"volume_limiter", "CAP_VOLUME_LIMITER", "--volume-limiter", 0, 1, "Limitador de volumen"},
-    {"bt_powered_on", "CAP_BT_WHEN_POWERED_ON", "--bt-when-powered-on", 0, 1, "Bluetooth al encender"},
-    {"bt_call_volume", "CAP_BT_CALL_VOLUME", "--bt-call-volume", 0, 100, "Volumen de llamadas"},
-    {"noise_filter", "CAP_NOISE_FILTER", "--noise-filter", 0, 2, "Filtro de ruido"},
+    {"sidetone", "CAP_SIDETONE", "-s", 0, 128, QT_TRANSLATE_NOOP("Setting", "Sidetone")},
+    {"lights", "CAP_LIGHTS", "-l", 0, 1, QT_TRANSLATE_NOOP("Setting", "Lights")},
+    {"inactive_time", "CAP_INACTIVE_TIME", "-i", 0, 90, QT_TRANSLATE_NOOP("Setting", "Auto power-off")},
+    {"voice_prompts", "CAP_VOICE_PROMPTS", "-v", 0, 1, QT_TRANSLATE_NOOP("Setting", "Voice prompts")},
+    {"rotate_to_mute", "CAP_ROTATE_TO_MUTE", "-r", 0, 1, QT_TRANSLATE_NOOP("Setting", "Rotate to mute")},
+    {"mic_led", "CAP_MICROPHONE_MUTE_LED_BRIGHTNESS", "--microphone-mute-led-brightness", 0, 3, QT_TRANSLATE_NOOP("Setting", "Mute LED")},
+    {"mic_volume", "CAP_MICROPHONE_VOLUME", "--microphone-volume", 0, 128, QT_TRANSLATE_NOOP("Setting", "Mic volume")},
+    {"volume_limiter", "CAP_VOLUME_LIMITER", "--volume-limiter", 0, 1, QT_TRANSLATE_NOOP("Setting", "Volume limiter")},
+    {"bt_powered_on", "CAP_BT_WHEN_POWERED_ON", "--bt-when-powered-on", 0, 1, QT_TRANSLATE_NOOP("Setting", "Bluetooth on power-up")},
+    {"bt_call_volume", "CAP_BT_CALL_VOLUME", "--bt-call-volume", 0, 100, QT_TRANSLATE_NOOP("Setting", "Call volume")},
+    {"noise_filter", "CAP_NOISE_FILTER", "--noise-filter", 0, 2, QT_TRANSLATE_NOOP("Setting", "Noise filter")},
 };
 
 const Setting *findSetting(const QString &key)
@@ -60,11 +61,12 @@ const Setting *findSetting(const QString &key)
 
 QString settingMessage(const Setting &s, int value)
 {
-    const QString label = QString::fromUtf8(s.label);
+    const QString label = QCoreApplication::translate("Setting", s.label);
     if (s.max == 1)
-        return QStringLiteral("%1 · %2").arg(label, value ? QStringLiteral("activado") : QStringLiteral("desactivado"));
+        return QStringLiteral("%1 · %2").arg(label, value ? QCoreApplication::translate("Setting", "on")
+                                                          : QCoreApplication::translate("Setting", "off"));
     if (qstrcmp(s.key, "inactive_time") == 0)
-        return value == 0 ? QStringLiteral("%1 · nunca").arg(label)
+        return value == 0 ? QStringLiteral("%1 · %2").arg(label, QCoreApplication::translate("Setting", "never"))
                           : QStringLiteral("%1 · %2 min").arg(label).arg(value);
     return QStringLiteral("%1 · %2").arg(label).arg(value);
 }
@@ -80,7 +82,7 @@ QString stateFile()
     return configDir("arctis-control") + QStringLiteral("/state.json");
 }
 
-// Archivo de la versión anterior (nova5-panel), solo para Arctis Nova 5.
+// State file of the previous app (nova5-panel), which only supported the Arctis Nova 5.
 QString legacyStateFile()
 {
     return configDir("nova5-panel") + QStringLiteral("/state.json");
@@ -88,7 +90,7 @@ QString legacyStateFile()
 
 QJsonObject readJsonFile(const QString &path)
 {
-    // Solo un archivo normal: un FIFO bloquearía la apertura.
+    // Regular files only: opening a FIFO would block.
     const QFileInfo info(path);
     if (!info.isFile() || info.isSymLink())
         return {};
@@ -110,9 +112,9 @@ QString deviceKey(const QJsonObject &dev)
     return hex("id_vendor") + QLatin1Char(':') + hex("id_product");
 }
 
-// Los presets llegan como objeto JSON y QJsonObject ordena las claves
-// alfabéticamente, pero «-p N» usa el orden original. Lo sacamos del texto:
-// el bloque «equalizer_presets» que sigue al «id_product» número `index`.
+// Presets arrive as a JSON object and QJsonObject sorts its keys alphabetically,
+// but "-p N" uses the original order, so it is read from the raw text: the
+// "equalizer_presets" block that follows the `index`-th "id_product".
 QStringList presetOrder(const QString &text, int index)
 {
     qsizetype pos = -1;
@@ -147,7 +149,7 @@ void HeadsetController::setTestDevice(bool enabled)
 HeadsetController::HeadsetController(QObject *parent)
     : QObject(parent)
 {
-    // Entorno mínimo: headsetcontrol no necesita nada del nuestro.
+    // Minimal environment: headsetcontrol needs nothing from ours.
     QProcessEnvironment env;
     env.insert(QStringLiteral("LANG"), QStringLiteral("C.UTF-8"));
     m_process.setProcessEnvironment(env);
@@ -163,11 +165,11 @@ HeadsetController::HeadsetController(QObject *parent)
         const QString err = QString::fromUtf8(m_process.readAllStandardError().left(4096)).trimmed();
         if (m_process.bytesAvailable() > 0) {
             m_process.readAll();
-            return handleFinished({}, tr("Respuesta de headsetcontrol demasiado grande"));
+            return handleFinished({}, tr("headsetcontrol output is too large"));
         }
-        handleFinished(out, status == QProcess::CrashExit ? tr("headsetcontrol no respondió") : err);
+        handleFinished(out, status == QProcess::CrashExit ? tr("headsetcontrol did not respond") : err);
     });
-    // Corta en cuanto la salida pasa del límite, en lugar de acumularla en memoria.
+    // Stop as soon as the output exceeds the limit instead of buffering it.
     connect(&m_process, &QProcess::readyReadStandardOutput, this, [this] {
         if (m_process.bytesAvailable() > kMaxOutput)
             m_process.kill();
@@ -175,7 +177,7 @@ HeadsetController::HeadsetController(QObject *parent)
     connect(&m_process, &QProcess::errorOccurred, this, [this](QProcess::ProcessError error) {
         if (error == QProcess::FailedToStart) {
             m_killTimer.stop();
-            handleFinished({}, tr("Falta headsetcontrol: sudo pacman -S headsetcontrol"));
+            handleFinished({}, tr("headsetcontrol is not installed"));
         }
     });
 
@@ -186,15 +188,15 @@ HeadsetController::HeadsetController(QObject *parent)
     setPolling(true);
 }
 
-// ---- Dispositivo seleccionado -------------------------------------------------
+// ---- Selected device -----------------------------------------------------------
 
 const HeadsetController::Device *HeadsetController::device() const
 {
     return m_current >= 0 && m_current < m_devices.size() ? &m_devices.at(m_current) : nullptr;
 }
 
-// Toda orden lleva «-d»: sin él, headsetcontrol la aplica a todos los auriculares
-// conectados (y en modo de prueba, también a los reales además del simulado).
+// Every command carries "-d": without it headsetcontrol applies it to every
+// connected headset (and in test mode, to the real ones besides the mock).
 QStringList HeadsetController::deviceArgs() const
 {
     const Device *d = device();
@@ -274,7 +276,7 @@ int HeadsetController::chatmix() const
     return d ? qBound(-1, d->status.value(QStringLiteral("chatmix")).toInt(-1), 128) : -1;
 }
 
-// ---- Ecualizador ----------------------------------------------------------------
+// ---- Equalizer -----------------------------------------------------------------
 
 QStringList HeadsetController::presetNames() const
 {
@@ -335,7 +337,7 @@ QList<double> HeadsetController::activeBands() const
     return bands;
 }
 
-// ---- Órdenes ------------------------------------------------------------------
+// ---- Commands ------------------------------------------------------------------
 
 void HeadsetController::setPolling(bool enabled)
 {
@@ -343,7 +345,7 @@ void HeadsetController::setPolling(bool enabled)
         return;
     if (enabled) {
         m_pollTimer.start();
-        refresh(); // al volver a la ventana, datos al momento
+        refresh(); // fresh data as soon as the window is back
     } else {
         m_pollTimer.stop();
     }
@@ -352,7 +354,7 @@ void HeadsetController::setPolling(bool enabled)
 
 void HeadsetController::refresh()
 {
-    // Evita amontonar lecturas si el auricular tarda en responder.
+    // Don't pile up reads if the headset is slow to answer.
     if (m_job.isRefresh && m_running)
         return;
     for (const Job &job : m_queue)
@@ -370,7 +372,7 @@ int HeadsetController::setting(const QString &key) const
     const Setting *s = findSetting(key);
     if (!d || !s)
         return -1;
-    // Algunos auriculares sí informan del sidetone actual.
+    // Some headsets do report their current sidetone.
     if (key == QLatin1String("sidetone")) {
         const QJsonValue level = d->status.value(QStringLiteral("sidetone")).toObject().value(QStringLiteral("level"));
         if (level.isDouble())
@@ -385,11 +387,11 @@ void HeadsetController::apply(const QString &key, int value)
     const Device *d = device();
     const Setting *s = findSetting(key);
     if (!d || !s)
-        return emit notify(tr("Ajuste no válido"), true);
+        return emit notify(tr("Invalid setting"), true);
     if (!d->caps.contains(QLatin1String(s->cap)))
-        return emit notify(tr("Este auricular no admite ese ajuste"), true);
+        return emit notify(tr("This headset does not support that setting"), true);
     if (value < s->min || value > s->max)
-        return emit notify(tr("Valor fuera de rango (%1 a %2)").arg(s->min).arg(s->max), true);
+        return emit notify(tr("Value out of range (%1 to %2)").arg(s->min).arg(s->max), true);
     enqueue({deviceArgs() + QStringList{QString::fromLatin1(s->flag), QString::number(value)},
              [key, value](QJsonObject &state) { state.insert(key, value); },
              settingMessage(*s, value)});
@@ -399,27 +401,27 @@ void HeadsetController::setEqPreset(int index)
 {
     const Device *d = device();
     if (!d || !d->caps.contains(QLatin1String("CAP_EQUALIZER_PRESET")))
-        return emit notify(tr("Este auricular no tiene presets"), true);
+        return emit notify(tr("This headset has no presets"), true);
     if (index < 0 || index >= d->presetNames.size())
-        return emit notify(tr("Preset no válido"), true);
+        return emit notify(tr("Invalid preset"), true);
     enqueue({deviceArgs() + QStringList{QStringLiteral("-p"), QString::number(index)},
              [index](QJsonObject &state) { state.insert(QStringLiteral("eq_preset"), index); },
-             tr("Preset «%1» aplicado").arg(d->presetNames.at(index))});
+             tr("Preset “%1” applied").arg(d->presetNames.at(index))});
 }
 
 void HeadsetController::setEqCustom(const QList<double> &bands)
 {
     const Device *d = device();
     if (!d || !d->caps.contains(QLatin1String("CAP_EQUALIZER")))
-        return emit notify(tr("Este auricular no tiene ecualizador"), true);
+        return emit notify(tr("This headset has no equalizer"), true);
     if (bands.size() != eqBands())
-        return emit notify(tr("El ecualizador necesita %1 bandas").arg(eqBands()), true);
+        return emit notify(tr("The equalizer needs %1 bands").arg(eqBands()), true);
     const double lo = eqMin(), hi = eqMax(), step = eqStep();
     QJsonArray stored;
     QStringList parts;
     for (const double v : bands) {
         if (!std::isfinite(v) || v < lo || v > hi)
-            return emit notify(tr("Valor fuera de rango (%1 a %2)").arg(lo).arg(hi), true);
+            return emit notify(tr("Value out of range (%1 to %2)").arg(lo).arg(hi), true);
         const double rounded = qBound(lo, std::round(v / step) * step, hi);
         stored << rounded;
         parts << QString::number(rounded, 'g', 4);
@@ -429,7 +431,7 @@ void HeadsetController::setEqCustom(const QList<double> &bands)
                  state.insert(QStringLiteral("eq_custom"), stored);
                  state.remove(QStringLiteral("eq_preset"));
              },
-             tr("Ecualizador aplicado")});
+             tr("Equalizer applied")});
 }
 
 void HeadsetController::playNotification()
@@ -438,13 +440,13 @@ void HeadsetController::playNotification()
     if (!d || !d->caps.contains(QLatin1String("CAP_NOTIFICATION_SOUND")))
         return;
     enqueue({deviceArgs() + QStringList{QStringLiteral("-n"), QStringLiteral("0")}, nullptr,
-             tr("Sonido de aviso enviado")});
+             tr("Notification sound sent")});
 }
 
 void HeadsetController::enqueue(Job job)
 {
     if (!job.isRefresh && !job.args.contains(QStringLiteral("-d")))
-        return emit notify(tr("No hay ningún auricular seleccionado"), true);
+        return emit notify(tr("No headset selected"), true);
     m_queue.enqueue(std::move(job));
     emit busyChanged();
     if (!m_running)
@@ -480,17 +482,17 @@ void HeadsetController::handleFinished(const QByteArray &output, const QString &
         return runNext();
     }
 
-    // El resultado de cada orden llega en «actions». Sin acciones, la orden no
-    // se ejecutó (p. ej. headsetcontrol no la entendió): nunca se da por buena.
+    // The result of each command comes in "actions". No actions means the command
+    // never ran (e.g. headsetcontrol rejected it): never treat that as success.
     const QJsonArray actions = root.value(QStringLiteral("actions")).toArray();
     QStringList errors;
     for (const QJsonValue &v : actions) {
         const QJsonObject action = v.toObject();
         if (action.value(QStringLiteral("status")).toString() != QLatin1String("success"))
-            errors << action.value(QStringLiteral("error_message")).toString(tr("La orden falló"));
+            errors << action.value(QStringLiteral("error_message")).toString(tr("The command failed"));
     }
     if (actions.isEmpty())
-        errors << (!failure.isEmpty() ? failure.section(QLatin1Char('\n'), 0, 0) : tr("El auricular no respondió"));
+        errors << (!failure.isEmpty() ? failure.section(QLatin1Char('\n'), 0, 0) : tr("The headset did not respond"));
 
     if (!errors.isEmpty()) {
         emit notify(errors.join(QStringLiteral("; ")), true);
@@ -517,7 +519,7 @@ void HeadsetController::applyDevices(const QJsonArray &devices, const QByteArray
     QList<Device> found;
     for (qsizetype i = 0; i < devices.size(); ++i) {
         const QJsonObject dev = devices.at(i).toObject();
-        // Solo SteelSeries; en modo de prueba, solo el simulado (las órdenes van a él).
+        // SteelSeries only; in test mode only the mock (commands go to it).
         const QString vendor = dev.value(QStringLiteral("id_vendor")).toString().toLower();
         if (vendor != (s_testDevice ? kTestVendor : kSteelSeriesVendor))
             continue;
@@ -549,11 +551,11 @@ void HeadsetController::applyDevices(const QJsonArray &devices, const QByteArray
     }
 
     if (found.isEmpty())
-        return setNoDevice(tr("No se detecta ningún auricular SteelSeries compatible"));
+        return setNoDevice(tr("No supported SteelSeries headset detected"));
 
     m_devices = found;
     m_errorText.clear();
-    // Se mantiene el auricular elegido si sigue conectado.
+    // Keep the selected headset if it is still connected.
     m_current = 0;
     for (qsizetype i = 0; i < m_devices.size(); ++i)
         if (m_devices.at(i).id == previousId)
@@ -585,7 +587,7 @@ void HeadsetController::setNoDevice(const QString &reason)
     emit statusChanged();
 }
 
-// ---- Estado guardado -------------------------------------------------------------
+// ---- Saved state ---------------------------------------------------------------
 
 QJsonObject &HeadsetController::currentState()
 {
@@ -603,7 +605,7 @@ void HeadsetController::loadState()
             continue;
         const QJsonObject in = it.value().toObject();
         QJsonObject out;
-        // Solo claves conocidas y dentro de rango.
+        // Known keys only, clamped to their ranges.
         for (const Setting &s : kSettings) {
             const QJsonValue v = in.value(QLatin1String(s.key));
             if (v.isDouble())
@@ -624,7 +626,7 @@ void HeadsetController::loadState()
     if (!root.isEmpty())
         return;
 
-    // Primera vez: se recuperan los ajustes de nova5-panel (Arctis Nova 5).
+    // First run: import the settings of nova5-panel (Arctis Nova 5).
     const QJsonObject legacy = readJsonFile(legacyStateFile());
     if (legacy.isEmpty())
         return;
@@ -649,7 +651,7 @@ void HeadsetController::loadState()
 void HeadsetController::saveState() const
 {
     if (s_testDevice)
-        return; // el dispositivo simulado no toca los ajustes reales
+        return; // the mock device never touches the real settings
     QJsonObject devices;
     for (auto it = m_state.cbegin(); it != m_state.cend(); ++it)
         if (!it.key().isEmpty() && !it.value().isEmpty())

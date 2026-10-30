@@ -1,18 +1,18 @@
 # Maintainer: J5MX <35576890+J5MX@users.noreply.github.com>
 #
-# Compila desde la copia local del repositorio (la carpeta superior a esta).
-# Uso:  cd packaging && makepkg -si
+# Builds from the local checkout of the repository (the parent of this folder).
+# Usage:  cd packaging && makepkg -si
 
 pkgname=arctis-control
-pkgver=0.3.0
+pkgver=0.4.0
 pkgrel=1
-pkgdesc="Panel no oficial para auriculares SteelSeries Arctis: batería, ecualizador y ajustes (HeadsetControl)"
+pkgdesc="Unofficial control panel for SteelSeries Arctis headsets: battery, equalizer and settings (HeadsetControl)"
 arch=('x86_64')
 url="https://github.com/J5MX/arctis-control"
 license=('GPL-3.0-or-later')
 depends=('headsetcontrol' 'qt6-base' 'qt6-declarative' 'qt6-svg' 'gcc-libs' 'glibc')
-makedepends=('cmake')
-optdepends=('ttf-fira-sans: tipografía de la interfaz')
+makedepends=('cmake' 'qt6-tools')
+optdepends=('ttf-fira-sans: interface font')
 provides=('nova5-panel')
 conflicts=('nova5-panel')
 replaces=('nova5-panel')
@@ -20,8 +20,7 @@ replaces=('nova5-panel')
 build() {
   cmake -B build -S "$startdir/.." \
     -DCMAKE_BUILD_TYPE=None \
-    -DCMAKE_INSTALL_PREFIX=/usr \
-    -Wno-dev
+    -DCMAKE_INSTALL_PREFIX=/usr
   cmake --build build
 }
 

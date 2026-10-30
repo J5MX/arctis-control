@@ -1,7 +1,7 @@
 import QtQuick
 import QtQuick.Shapes
 
-// Anillo de batería: naranja normal, amarillo ≤ 35 %, rojo ≤ 15 %.
+// Battery ring: orange normally, yellow at ≤ 35 %, red at ≤ 15 %.
 Item {
     id: ring
 
@@ -14,7 +14,7 @@ Item {
     implicitWidth: 104
     implicitHeight: 104
 
-    // Halo suave alrededor del anillo
+    // Soft halo around the ring
     Rectangle {
         anchors.centerIn: parent
         width: parent.width + 14

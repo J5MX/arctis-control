@@ -1,7 +1,7 @@
 import QtQuick
 import QtQuick.Layouts
 
-// Ajuste de sí/no: título, explicación e interruptor.
+// On/off setting: title, description and switch.
 RowLayout {
     id: row
 
