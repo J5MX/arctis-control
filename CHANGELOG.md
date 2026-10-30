@@ -2,6 +2,24 @@
 
 All notable changes to Arctis Control. Versions before 1.0 are previews.
 
+## Unreleased (0.6.0)
+
+### Added
+- Tray icon with the battery level drawn on it; click to show or hide the window, right-click
+  menu with the battery and Quit.
+- Choice of what closing the window does (quit or hide to tray) and what minimizing does (taskbar
+  or tray; X11 only, as Wayland does not tell apps they were minimized), plus a "Hide to tray"
+  button that works everywhere.
+- Low-battery desktop notifications at 20 % and 10 %, once per discharge.
+- Start at login (hidden in the tray), through the standard XDG autostart folder.
+- Single instance: launching the app again shows the running window (session D-Bus).
+- Unit tests for the low-battery logic (ctest).
+
+### Changed
+- While hidden, the headset is polled every 60 s instead of 20 s.
+- `compile_commands.json` is generated for clangd and editors.
+- The local PKGBUILD no longer replaces `nova5-panel`; clearer installation instructions.
+
 ## 0.5.0 — 2026-10-30
 
 ### Added

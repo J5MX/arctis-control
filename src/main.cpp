@@ -1,5 +1,5 @@
 #include <QCommandLineParser>
-#include <QGuiApplication>
+#include <QApplication>
 #include <QIcon>
 #include <QLocale>
 #include <QNetworkAccessManager>
@@ -11,6 +11,7 @@
 #include <QTimer>
 #include <QTranslator>
 
+#include "appcontroller.h"
 #include "headsetcontroller.h"
 #include "headsetmic.h"
 
@@ -43,7 +44,7 @@ public:
 
 // Automated test against the mock headset: applies every setting through the
 // same code the UI uses and checks that headsetcontrol accepts it.
-int runSelfTest(QGuiApplication &app)
+int runSelfTest(QApplication &app)
 {
     HeadsetController controller;
     struct Step { QString name; std::function<void()> run; };
@@ -117,7 +118,8 @@ int main(int argc, char *argv[])
     // The Basic style is the one that allows fully customizing the controls.
     QQuickStyle::setStyle(QStringLiteral("Basic"));
 
-    QGuiApplication app(argc, argv);
+    // QApplication (not QGuiApplication): the tray menu is a widget.
+    QApplication app(argc, argv);
 
     // UI in English; translated to the system language when available (e.g. Spanish).
     QTranslator translator;
@@ -145,6 +147,9 @@ int main(int argc, char *argv[])
     const QCommandLineOption selfTest(QStringLiteral("self-test"),
                                       QStringLiteral("With --test-device: apply every setting to the mock and exit."));
     parser.addOption(selfTest);
+    const QCommandLineOption minimized(QStringLiteral("minimized"),
+                                       QStringLiteral("Start hidden in the tray (used when starting at login)."));
+    parser.addOption(minimized);
     parser.process(app);
     HeadsetController::setTestDevice(parser.isSet(testDevice));
     if (parser.isSet(selfTest)) {
@@ -155,6 +160,12 @@ int main(int argc, char *argv[])
         return runSelfTest(app);
     }
 
+    // Desktop integration. Development modes skip the tray and the single instance.
+    const bool devMode = parser.isSet(screenshot) || parser.isSet(testDevice);
+    AppController appController(parser.isSet(minimized) && !devMode);
+    if (!devMode && !appController.claimSingleInstance())
+        return 0; // another instance is running and has been brought to the front
+
     // Declared before the engine so it outlives it (the engine does not own it).
     OfflineFactory offline;
     QQmlApplicationEngine engine;
@@ -163,6 +174,9 @@ int main(int argc, char *argv[])
         &engine, &QQmlApplicationEngine::objectCreationFailed, &app,
         [] { QCoreApplication::exit(1); }, Qt::QueuedConnection);
     engine.loadFromModule("ArctisControl", "Main");
+    if (!devMode && !engine.rootObjects().isEmpty())
+        appController.attach(qobject_cast<QQuickWindow *>(engine.rootObjects().constFirst()),
+                             engine.singletonInstance<HeadsetController *>("ArctisControl", "HeadsetController"));
 
     if (parser.isSet(screenshot) && !engine.rootObjects().isEmpty()) {
         auto *window = qobject_cast<QQuickWindow *>(engine.rootObjects().constFirst());

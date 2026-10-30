@@ -26,7 +26,8 @@ ApplicationWindow {
     height: 860
     minimumWidth: 720
     minimumHeight: 560
-    visible: true
+    // Started at login with --minimized: only the tray icon shows up.
+    visible: !AppController.startMinimized
     title: HeadsetController.connected ? "Arctis Control · " + HeadsetController.deviceName : "Arctis Control"
     color: Theme.bg
     font.family: "Noto Sans"
@@ -92,16 +93,44 @@ ApplicationWindow {
 
     Component.onCompleted: syncControls()
 
-    // Do not poll the headset while the window is minimized.
+    readonly property bool shown: root.visible && root.visibility !== Window.Minimized
+
+    function hideToTray() {
+        root.hide()
+        AppController.hiddenToTray()
+    }
+
+    // Closing: hide to the tray or quit, as the user chose.
+    onClosing: (close) => {
+        if (AppController.trayAvailable && AppController.closeToTray) {
+            close.accepted = false
+            root.hideToTray()
+        } else {
+            Qt.quit()
+        }
+    }
+
+    // Minimizing to the tray (X11 only: Wayland never reports the minimized state).
+    onVisibilityChanged: (visibility) => {
+        if (visibility === Window.Minimized && AppController.minimizeToTray && AppController.trayAvailable)
+            root.hideToTray()
+    }
+
+    // While hidden, poll only for the tray (battery), and less often.
     Binding {
         target: HeadsetController
         property: "polling"
-        value: root.visible && root.visibility !== Window.Minimized
+        value: root.shown || AppController.trayActive
+    }
+    Binding {
+        target: HeadsetController
+        property: "background"
+        value: !root.shown
     }
     Binding {
         target: HeadsetMic
         property: "polling"
-        value: root.visible && root.visibility !== Window.Minimized
+        value: root.shown
     }
     // The PipeWire sound card of the selected headset.
     Binding {
@@ -205,6 +234,12 @@ ApplicationWindow {
                     text: "▾"
                     color: Theme.accent
                 }
+            }
+
+            CutButton {
+                visible: AppController.trayAvailable
+                text: qsTr("Hide to tray")
+                onClicked: root.hideToTray()
             }
 
             // Connection status
@@ -699,6 +734,52 @@ ApplicationWindow {
                         key: "rotate_to_mute"
                         title: qsTr("Rotate to mute")
                         subtitle: qsTr("Mutes when the boom is raised")
+                    }
+                }
+            }
+
+            Card {
+                title: qsTr("App")
+                Layout.fillWidth: true
+                Layout.columnSpan: grid.columns
+
+                GridLayout {
+                    Layout.fillWidth: true
+                    columns: root.width >= 900 ? 2 : 1
+                    columnSpacing: 32
+                    rowSpacing: 18
+
+                    AppChoice {
+                        visible: AppController.trayAvailable
+                        title: qsTr("When closing the window")
+                        subtitle: qsTr("In the tray the app keeps an icon next to the clock with the battery level.")
+                        options: [qsTr("Quit"), qsTr("Hide to tray")]
+                        current: AppController.closeToTray ? 1 : 0
+                        onChosen: (index) => AppController.closeToTray = index === 1
+                    }
+                    AppChoice {
+                        visible: AppController.trayAvailable
+                        enabled: AppController.canDetectMinimize
+                        title: qsTr("When minimizing the window")
+                        subtitle: AppController.canDetectMinimize
+                            ? ""
+                            : qsTr("Not available on Wayland, which does not tell apps when they are minimized. Use the “Hide to tray” button instead.")
+                        options: [qsTr("Taskbar"), qsTr("Hide to tray")]
+                        current: AppController.minimizeToTray && AppController.canDetectMinimize ? 1 : 0
+                        onChosen: (index) => AppController.minimizeToTray = index === 1
+                    }
+                    AppSwitch {
+                        title: qsTr("Start at login")
+                        subtitle: AppController.trayAvailable ? qsTr("Starts hidden in the tray when you log in.")
+                                                              : qsTr("Opens the window when you log in.")
+                        checked: AppController.startAtLogin
+                        onToggled: (on) => AppController.startAtLogin = on
+                    }
+                    AppSwitch {
+                        title: qsTr("Low battery notifications")
+                        subtitle: qsTr("A desktop notification at 20 % and 10 %.")
+                        checked: AppController.lowBatteryAlerts
+                        onToggled: (on) => AppController.lowBatteryAlerts = on
                     }
                 }
             }

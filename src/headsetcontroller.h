@@ -48,6 +48,8 @@ class HeadsetController : public QObject
     Q_PROPERTY(bool busy READ busy NOTIFY busyChanged)
     // The UI turns it off while minimized so no processes are spawned for nothing.
     Q_PROPERTY(bool polling READ polling WRITE setPolling NOTIFY pollingChanged)
+    // Hidden in the tray: poll less often (only the battery matters there).
+    Q_PROPERTY(bool background READ background WRITE setBackground NOTIFY backgroundChanged)
 
 public:
     explicit HeadsetController(QObject *parent = nullptr);
@@ -84,6 +86,8 @@ public:
     bool busy() const { return m_running || !m_queue.isEmpty(); }
     bool polling() const { return m_pollTimer.isActive(); }
     void setPolling(bool enabled);
+    bool background() const { return m_background; }
+    void setBackground(bool background);
 
     Q_INVOKABLE void refresh();
     // Last applied value of a simple setting (or the one read from the headset); -1 if unknown.
@@ -100,6 +104,7 @@ signals:
     void stateChanged();
     void busyChanged();
     void pollingChanged();
+    void backgroundChanged();
     void notify(const QString &message, bool error);
 
 private:
@@ -147,6 +152,7 @@ private:
     int m_current = -1;
     QString m_errorText;
     QString m_updatedText;
+    bool m_background = false;
 
     // Last applied values per device ("1038:2232" → {key: value}).
     // HeadsetControl cannot read most settings back from the headset.

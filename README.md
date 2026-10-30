@@ -17,6 +17,9 @@ If you use a separate microphone, you can also **turn the headset microphone off
 (and apps such as Discord or games) no longer see it. This switches the headset's PipeWire sound
 card to its output-only profile; WirePlumber remembers the choice.
 
+It can also live in the **system tray**, with the battery level on its icon, warn you with a
+desktop notification when the battery is low (20 % and 10 %) and start at login.
+
 Native C++/Qt 6 (QML) application: no browser, no server and no network connections.
 The interface is in English and switches to Spanish automatically on Spanish systems.
 

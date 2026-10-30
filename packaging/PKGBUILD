@@ -4,7 +4,7 @@
 # Usage:  cd packaging && makepkg -si
 
 pkgname=arctis-control
-pkgver=0.5.0
+pkgver=0.6.0
 pkgrel=1
 pkgdesc="Unofficial control panel for SteelSeries Arctis headsets: battery, equalizer and settings (HeadsetControl)"
 arch=('x86_64')

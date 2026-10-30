@@ -17,6 +17,9 @@ Si usas un micrófono aparte, puedes **desactivar el micrófono del auricular** 
 (y apps como Discord o los juegos) dejen de verlo. Cambia la tarjeta de sonido del auricular en
 PipeWire a su perfil de solo salida; WirePlumber recuerda la elección.
 
+También puede quedarse en la **bandeja del sistema**, con el nivel de batería en su icono, avisarte
+con una notificación cuando queda poca batería (20 % y 10 %) y abrirse al iniciar sesión.
+
 Aplicación nativa en C++/Qt 6 (QML): sin navegador, sin servidor y sin conexiones de red. La
 interfaz está en inglés y cambia sola a español en sistemas en español.
 

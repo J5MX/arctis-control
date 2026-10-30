@@ -22,6 +22,7 @@ const QString kSteelSeriesVendor = QStringLiteral("0x1038");
 const QString kTestVendor = QStringLiteral("0xf00b");
 constexpr int kTimeoutMs = 20000;
 constexpr int kPollMs = 20000;
+constexpr int kBackgroundPollMs = 60000;
 constexpr qint64 kMaxOutput = 1 << 20; // a normal reply is a few KiB
 constexpr int kMaxBands = 32;
 // Upper bounds for data coming from headsetcontrol, so odd output cannot
@@ -373,6 +374,17 @@ void HeadsetController::setPolling(bool enabled)
         m_pollTimer.stop();
     }
     emit pollingChanged();
+}
+
+void HeadsetController::setBackground(bool background)
+{
+    if (background == m_background)
+        return;
+    m_background = background;
+    m_pollTimer.setInterval(background ? kBackgroundPollMs : kPollMs);
+    if (!background)
+        refresh(); // fresh data as soon as the window is shown
+    emit backgroundChanged();
 }
 
 void HeadsetController::refresh()
