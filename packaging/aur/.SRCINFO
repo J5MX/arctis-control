@@ -1,0 +1,21 @@
+pkgbase = arctis-control
+	pkgdesc = Unofficial control panel for SteelSeries Arctis headsets: battery, equalizer and settings (HeadsetControl)
+	pkgver = 0.5.0
+	pkgrel = 1
+	url = https://github.com/J5MX/arctis-control
+	arch = x86_64
+	license = GPL-3.0-or-later
+	makedepends = cmake
+	makedepends = qt6-tools
+	depends = headsetcontrol
+	depends = qt6-base
+	depends = qt6-declarative
+	depends = qt6-svg
+	depends = libpulse
+	depends = gcc-libs
+	depends = glibc
+	optdepends = ttf-fira-sans: interface font
+	source = arctis-control-0.5.0.tar.gz::https://github.com/J5MX/arctis-control/archive/refs/tags/v0.5.0.tar.gz
+	sha256sums = 10c2c9906bec0e6a7a98a20e02014fd91cfea8f39f006b125d0b40f2b56750f3
+
+pkgname = arctis-control

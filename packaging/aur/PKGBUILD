@@ -1,0 +1,30 @@
+# Maintainer: J5MX <35576890+J5MX@users.noreply.github.com>
+
+pkgname=arctis-control
+pkgver=0.5.0
+pkgrel=1
+pkgdesc="Unofficial control panel for SteelSeries Arctis headsets: battery, equalizer and settings (HeadsetControl)"
+arch=('x86_64')
+url="https://github.com/J5MX/arctis-control"
+license=('GPL-3.0-or-later')
+depends=('headsetcontrol' 'qt6-base' 'qt6-declarative' 'qt6-svg' 'libpulse' 'gcc-libs' 'glibc')
+makedepends=('cmake' 'qt6-tools')
+optdepends=('ttf-fira-sans: interface font')
+source=("$pkgname-$pkgver.tar.gz::$url/archive/refs/tags/v$pkgver.tar.gz")
+sha256sums=('10c2c9906bec0e6a7a98a20e02014fd91cfea8f39f006b125d0b40f2b56750f3')
+
+build() {
+  cmake -B build -S "$pkgname-$pkgver" \
+    -DCMAKE_BUILD_TYPE=None \
+    -DCMAKE_INSTALL_PREFIX=/usr
+  cmake --build build
+}
+
+check() {
+  # Functional self-test against HeadsetControl's mock headset (no real device needed).
+  QT_QPA_PLATFORM=offscreen ./build/arctis-control --test-device --self-test
+}
+
+package() {
+  DESTDIR="$pkgdir" cmake --install build
+}
