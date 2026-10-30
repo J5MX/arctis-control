@@ -55,7 +55,7 @@ int runSelfTest(QGuiApplication &app)
     steps.append({QStringLiteral("eq_custom"), [&controller] {
         QList<double> bands(controller.eqBands(), 0.0);
         if (!bands.isEmpty())
-            bands.first() = controller.eqMin(); // extremo inferior del rango
+            bands.first() = controller.eqMin(); // lower end of the range
         controller.setEqCustom(bands);
     }});
     steps.append({QStringLiteral("notification"), [&controller] { controller.playNotification(); }});
@@ -129,8 +129,9 @@ int main(int argc, char *argv[])
         return runSelfTest(app);
     }
 
-    QQmlApplicationEngine engine;
+    // Declared before the engine so it outlives it (the engine does not own it).
     OfflineFactory offline;
+    QQmlApplicationEngine engine;
     engine.setNetworkAccessManagerFactory(&offline);
     QObject::connect(
         &engine, &QQmlApplicationEngine::objectCreationFailed, &app,

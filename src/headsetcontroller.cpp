@@ -11,18 +11,25 @@
 #include <QStandardPaths>
 #include <QTime>
 
+#include <algorithm>
 #include <cmath>
 #include <utility>
 
 namespace {
 
-const QString kHeadsetControl = QStringLiteral("/usr/bin/headsetcontrol");
+const QString kHeadsetControl = QStringLiteral(HEADSETCONTROL_PATH);
 const QString kSteelSeriesVendor = QStringLiteral("0x1038");
 const QString kTestVendor = QStringLiteral("0xf00b");
 constexpr int kTimeoutMs = 20000;
 constexpr int kPollMs = 20000;
 constexpr qint64 kMaxOutput = 1 << 20; // a normal reply is a few KiB
 constexpr int kMaxBands = 32;
+// Upper bounds for data coming from headsetcontrol, so odd output cannot
+// blow up memory or the UI.
+constexpr int kMaxDevices = 16;
+constexpr int kMaxCaps = 64;
+constexpr int kMaxPresets = 32;
+constexpr int kMaxNameLength = 80;
 
 bool s_testDevice = false;
 
@@ -50,6 +57,15 @@ constexpr Setting kSettings[] = {
     {"bt_call_volume", "CAP_BT_CALL_VOLUME", "--bt-call-volume", 0, 100, QT_TRANSLATE_NOOP("Setting", "Call volume")},
     {"noise_filter", "CAP_NOISE_FILTER", "--noise-filter", 0, 2, QT_TRANSLATE_NOOP("Setting", "Noise filter")},
 };
+
+// Integer from JSON clamped to [lo, hi]. Clamps the real value: QJsonValue::toInt()
+// returns 0 for numbers that do not fit an int, which would turn 1e12 into 0.
+int jsonInt(const QJsonValue &value, int lo, int hi, int fallback)
+{
+    if (!value.isDouble() || !std::isfinite(value.toDouble()))
+        return fallback;
+    return int(qBound(double(lo), std::round(value.toDouble()), double(hi)));
+}
 
 const Setting *findSetting(const QString &key)
 {
@@ -90,9 +106,10 @@ QString legacyStateFile()
 
 QJsonObject readJsonFile(const QString &path)
 {
-    // Regular files only: opening a FIFO would block.
+    // Regular files only (a FIFO would block). Symlinks to regular files are fine,
+    // so dotfile managers such as GNU Stow keep working.
     const QFileInfo info(path);
-    if (!info.isFile() || info.isSymLink())
+    if (!info.isFile())
         return {};
     QFile file(path);
     if (!file.open(QIODevice::ReadOnly))
@@ -188,6 +205,17 @@ HeadsetController::HeadsetController(QObject *parent)
     setPolling(true);
 }
 
+HeadsetController::~HeadsetController()
+{
+    // Stop a running headsetcontrol before the members go away: otherwise the
+    // process destructor emits finished() into handlers that use destroyed timers.
+    m_process.disconnect(this);
+    if (m_process.state() != QProcess::NotRunning) {
+        m_process.kill();
+        m_process.waitForFinished(1000);
+    }
+}
+
 // ---- Selected device -----------------------------------------------------------
 
 const HeadsetController::Device *HeadsetController::device() const
@@ -250,7 +278,7 @@ int HeadsetController::batteryLevel() const
     if (!d)
         return -1;
     const QJsonObject battery = d->status.value(QStringLiteral("battery")).toObject();
-    return qBound(-1, battery.value(QStringLiteral("level")).toInt(-1), 100);
+    return jsonInt(battery.value(QStringLiteral("level")), -1, 100, -1); // -1: off or unknown
 }
 
 QString HeadsetController::batteryStatus() const
@@ -265,15 +293,14 @@ int HeadsetController::batteryMinutes() const
     const Device *d = device();
     if (!d)
         return -1;
-    const int minutes = d->status.value(QStringLiteral("battery")).toObject()
-                            .value(QStringLiteral("time_to_empty_min")).toInt(-1);
-    return qBound(-1, minutes, 100 * 60);
+    return jsonInt(d->status.value(QStringLiteral("battery")).toObject().value(QStringLiteral("time_to_empty_min")),
+                   -1, 100 * 60, -1);
 }
 
 int HeadsetController::chatmix() const
 {
     const Device *d = device();
-    return d ? qBound(-1, d->status.value(QStringLiteral("chatmix")).toInt(-1), 128) : -1;
+    return d ? jsonInt(d->status.value(QStringLiteral("chatmix")), -1, 128, -1) : -1;
 }
 
 // ---- Equalizer -----------------------------------------------------------------
@@ -287,29 +314,25 @@ QStringList HeadsetController::presetNames() const
 int HeadsetController::eqBands() const
 {
     const Device *d = device();
-    if (!d)
-        return 0;
-    const int bands = d->status.value(QStringLiteral("equalizer")).toObject().value(QStringLiteral("bands")).toInt();
-    return qBound(0, bands, kMaxBands);
+    return d ? d->eqBands : 0;
 }
 
 double HeadsetController::eqMin() const
 {
     const Device *d = device();
-    return d ? d->status.value(QStringLiteral("equalizer")).toObject().value(QStringLiteral("min")).toDouble(-10) : -10;
+    return d ? d->eqMin : -10;
 }
 
 double HeadsetController::eqMax() const
 {
     const Device *d = device();
-    return d ? d->status.value(QStringLiteral("equalizer")).toObject().value(QStringLiteral("max")).toDouble(10) : 10;
+    return d ? d->eqMax : 10;
 }
 
 double HeadsetController::eqStep() const
 {
     const Device *d = device();
-    const double step = d ? d->status.value(QStringLiteral("equalizer")).toObject().value(QStringLiteral("step")).toDouble(1) : 1;
-    return step > 0 ? step : 1;
+    return d ? d->eqStep : 1;
 }
 
 int HeadsetController::eqPreset() const
@@ -317,7 +340,7 @@ int HeadsetController::eqPreset() const
     const Device *d = device();
     if (!d)
         return -1;
-    const int preset = m_state.value(d->id).value(QStringLiteral("eq_preset")).toInt(-1);
+    const int preset = jsonInt(m_state.value(d->id).value(QStringLiteral("eq_preset")), 0, kMaxPresets - 1, -1);
     return preset < d->presetNames.size() ? preset : -1;
 }
 
@@ -330,10 +353,10 @@ QList<double> HeadsetController::activeBands() const
     if (preset >= 0 && preset < d->presetBands.size())
         return d->presetBands.at(preset);
     const QJsonArray custom = m_state.value(d->id).value(QStringLiteral("eq_custom")).toArray();
-    QList<double> bands(eqBands(), 0.0);
+    QList<double> bands(d->eqBands, qBound(d->eqMin, 0.0, d->eqMax));
     if (custom.size() == bands.size())
         for (qsizetype i = 0; i < bands.size(); ++i)
-            bands[i] = qBound(eqMin(), custom.at(i).toDouble(), eqMax());
+            bands[i] = qBound(d->eqMin, custom.at(i).toDouble(), d->eqMax);
     return bands;
 }
 
@@ -363,7 +386,7 @@ void HeadsetController::refresh()
     QStringList args;
     if (s_testDevice)
         args << QStringLiteral("--test-device");
-    enqueue({args, nullptr, {}, true});
+    enqueue({args, nullptr, {}, true, {}});
 }
 
 int HeadsetController::setting(const QString &key) const
@@ -376,10 +399,10 @@ int HeadsetController::setting(const QString &key) const
     if (key == QLatin1String("sidetone")) {
         const QJsonValue level = d->status.value(QStringLiteral("sidetone")).toObject().value(QStringLiteral("level"));
         if (level.isDouble())
-            return qBound(s->min, level.toInt(), s->max);
+            return jsonInt(level, s->min, s->max, -1);
     }
     const QJsonValue v = m_state.value(d->id).value(key);
-    return v.isDouble() ? qBound(s->min, v.toInt(), s->max) : -1;
+    return jsonInt(v, s->min, s->max, -1);
 }
 
 void HeadsetController::apply(const QString &key, int value)
@@ -394,7 +417,7 @@ void HeadsetController::apply(const QString &key, int value)
         return emit notify(tr("Value out of range (%1 to %2)").arg(s->min).arg(s->max), true);
     enqueue({deviceArgs() + QStringList{QString::fromLatin1(s->flag), QString::number(value)},
              [key, value](QJsonObject &state) { state.insert(key, value); },
-             settingMessage(*s, value)});
+             settingMessage(*s, value), false, d->id});
 }
 
 void HeadsetController::setEqPreset(int index)
@@ -406,7 +429,7 @@ void HeadsetController::setEqPreset(int index)
         return emit notify(tr("Invalid preset"), true);
     enqueue({deviceArgs() + QStringList{QStringLiteral("-p"), QString::number(index)},
              [index](QJsonObject &state) { state.insert(QStringLiteral("eq_preset"), index); },
-             tr("Preset “%1” applied").arg(d->presetNames.at(index))});
+             tr("Preset “%1” applied").arg(d->presetNames.at(index)), false, d->id});
 }
 
 void HeadsetController::setEqCustom(const QList<double> &bands)
@@ -414,9 +437,9 @@ void HeadsetController::setEqCustom(const QList<double> &bands)
     const Device *d = device();
     if (!d || !d->caps.contains(QLatin1String("CAP_EQUALIZER")))
         return emit notify(tr("This headset has no equalizer"), true);
-    if (bands.size() != eqBands())
-        return emit notify(tr("The equalizer needs %1 bands").arg(eqBands()), true);
-    const double lo = eqMin(), hi = eqMax(), step = eqStep();
+    if (bands.size() != d->eqBands)
+        return emit notify(tr("The equalizer needs %1 bands").arg(d->eqBands), true);
+    const double lo = d->eqMin, hi = d->eqMax, step = d->eqStep;
     QJsonArray stored;
     QStringList parts;
     for (const double v : bands) {
@@ -431,16 +454,16 @@ void HeadsetController::setEqCustom(const QList<double> &bands)
                  state.insert(QStringLiteral("eq_custom"), stored);
                  state.remove(QStringLiteral("eq_preset"));
              },
-             tr("Equalizer applied")});
+             tr("Equalizer applied"), false, d->id});
 }
 
 void HeadsetController::playNotification()
 {
     const Device *d = device();
     if (!d || !d->caps.contains(QLatin1String("CAP_NOTIFICATION_SOUND")))
-        return;
+        return emit notify(tr("This headset does not support that setting"), true);
     enqueue({deviceArgs() + QStringList{QStringLiteral("-n"), QStringLiteral("0")}, nullptr,
-             tr("Notification sound sent")});
+             tr("Notification sound sent"), false, {}});
 }
 
 void HeadsetController::enqueue(Job job)
@@ -498,10 +521,11 @@ void HeadsetController::handleFinished(const QByteArray &output, const QString &
         emit notify(errors.join(QStringLiteral("; ")), true);
         refresh();
     } else {
-        if (job.onSuccess && device()) {
-            job.onSuccess(currentState());
+        if (job.onSuccess && !job.deviceId.isEmpty()) {
+            job.onSuccess(m_state[job.deviceId]);
             saveState();
-            emit stateChanged();
+            if (job.deviceId == deviceId())
+                emit stateChanged();
         }
         emit notify(job.successMessage, false);
     }
@@ -510,14 +534,17 @@ void HeadsetController::handleFinished(const QByteArray &output, const QString &
 
 void HeadsetController::applyDevices(const QJsonArray &devices, const QByteArray &rawOutput)
 {
-    const QString raw = QString::fromUtf8(rawOutput);
     const QString previousId = deviceId();
     const QStringList previousNames = deviceNames();
     const QStringList previousCaps = capabilities();
     const QStringList previousPresets = presetNames();
+    const QJsonObject previousStatus = device() ? device()->status : QJsonObject{};
+    const QString previousUpdated = m_updatedText;
+    const bool wasConnected = connected();
 
+    QString raw; // decoded only if some device's presets need parsing
     QList<Device> found;
-    for (qsizetype i = 0; i < devices.size(); ++i) {
+    for (qsizetype i = 0; i < devices.size() && found.size() < kMaxDevices; ++i) {
         const QJsonObject dev = devices.at(i).toObject();
         // SteelSeries only; in test mode only the mock (commands go to it).
         const QString vendor = dev.value(QStringLiteral("id_vendor")).toString().toLower();
@@ -528,24 +555,52 @@ void HeadsetController::applyDevices(const QJsonArray &devices, const QByteArray
 
         Device d;
         d.id = deviceKey(dev);
+        if (d.id.size() != 9)
+            continue;
         d.selector = QStringLiteral("0x") + d.id.left(4) + QStringLiteral(":0x") + d.id.mid(5);
-        d.name = dev.value(QStringLiteral("device")).toString();
+        d.name = dev.value(QStringLiteral("device")).toString().left(kMaxNameLength);
         if (d.name.startsWith(QLatin1String("SteelSeries ")))
             d.name.remove(0, 12);
-        for (const QJsonValue &cap : dev.value(QStringLiteral("capabilities")).toArray())
-            d.caps << cap.toString();
+        for (const QJsonValue &cap : dev.value(QStringLiteral("capabilities")).toArray()) {
+            if (d.caps.size() >= kMaxCaps)
+                break;
+            d.caps << cap.toString().left(64);
+        }
         d.status = dev;
 
-        const QJsonObject presets = dev.value(QStringLiteral("equalizer_presets")).toObject();
-        for (const QString &name : presetOrder(raw, int(i))) {
-            const QJsonArray values = presets.value(name).toArray();
-            if (values.isEmpty() || values.size() > kMaxBands)
-                continue;
-            QList<double> bands;
-            for (const QJsonValue &v : values)
-                bands << v.toDouble();
-            d.presetNames << name;
-            d.presetBands << bands;
+        // Equalizer geometry: sane limits even if the reported values are odd.
+        const QJsonObject eq = dev.value(QStringLiteral("equalizer")).toObject();
+        d.eqBands = jsonInt(eq.value(QStringLiteral("bands")), 0, kMaxBands, 0);
+        d.eqMin = qBound(-100.0, eq.value(QStringLiteral("min")).toDouble(-10), 0.0);
+        d.eqMax = qBound(0.0, eq.value(QStringLiteral("max")).toDouble(10), 100.0);
+        d.eqStep = qBound(0.01, eq.value(QStringLiteral("step")).toDouble(1), 10.0);
+        if (d.eqMax - d.eqMin < d.eqStep)
+            d.eqBands = 0; // unusable range: hide the bands
+
+        // Presets only need parsing when they change (normally once per device).
+        const QJsonValue presets = dev.value(QStringLiteral("equalizer_presets"));
+        const auto previous = std::find_if(m_devices.cbegin(), m_devices.cend(),
+                                           [&](const Device &p) { return p.id == d.id; });
+        if (previous != m_devices.cend()
+            && previous->status.value(QStringLiteral("equalizer_presets")) == presets) {
+            d.presetNames = previous->presetNames;
+            d.presetBands = previous->presetBands;
+        } else if (presets.isObject()) {
+            if (raw.isEmpty())
+                raw = QString::fromUtf8(rawOutput);
+            const QJsonObject presetObject = presets.toObject();
+            for (const QString &name : presetOrder(raw, int(i))) {
+                if (d.presetNames.size() >= kMaxPresets)
+                    break;
+                const QJsonArray values = presetObject.value(name).toArray();
+                if (values.isEmpty() || values.size() > kMaxBands)
+                    continue;
+                QList<double> bands;
+                for (const QJsonValue &v : values)
+                    bands << qBound(-100.0, v.toDouble(), 100.0);
+                d.presetNames << name.left(kMaxNameLength);
+                d.presetBands << bands;
+            }
         }
         found << d;
     }
@@ -568,7 +623,10 @@ void HeadsetController::applyDevices(const QJsonArray &devices, const QByteArray
         emit deviceChanged();
         emit stateChanged();
     }
-    emit statusChanged();
+    // Only wake the UI bindings when something visible actually changed.
+    if (!wasConnected || deviceId() != previousId || device()->status != previousStatus
+        || m_updatedText != previousUpdated)
+        emit statusChanged();
 }
 
 void HeadsetController::setNoDevice(const QString &reason)
@@ -589,11 +647,6 @@ void HeadsetController::setNoDevice(const QString &reason)
 
 // ---- Saved state ---------------------------------------------------------------
 
-QJsonObject &HeadsetController::currentState()
-{
-    return m_state[deviceId()];
-}
-
 void HeadsetController::loadState()
 {
     static const QRegularExpression idPattern(QStringLiteral("^[0-9a-f]{4}:[0-9a-f]{4}$"));
@@ -609,11 +662,11 @@ void HeadsetController::loadState()
         for (const Setting &s : kSettings) {
             const QJsonValue v = in.value(QLatin1String(s.key));
             if (v.isDouble())
-                out.insert(QLatin1String(s.key), qBound(s.min, v.toInt(), s.max));
+                out.insert(QLatin1String(s.key), jsonInt(v, s.min, s.max, s.min));
         }
         const QJsonValue preset = in.value(QStringLiteral("eq_preset"));
         if (preset.isDouble())
-            out.insert(QStringLiteral("eq_preset"), qBound(0, preset.toInt(), 31));
+            out.insert(QStringLiteral("eq_preset"), jsonInt(preset, 0, kMaxPresets - 1, 0));
         const QJsonArray custom = in.value(QStringLiteral("eq_custom")).toArray();
         if (!custom.isEmpty() && custom.size() <= kMaxBands) {
             QJsonArray bands;
@@ -632,7 +685,7 @@ void HeadsetController::loadState()
         return;
     QJsonObject nova5;
     if (legacy.value(QStringLiteral("eq_preset")).isDouble())
-        nova5.insert(QStringLiteral("eq_preset"), qBound(0, legacy.value(QStringLiteral("eq_preset")).toInt(), 3));
+        nova5.insert(QStringLiteral("eq_preset"), jsonInt(legacy.value(QStringLiteral("eq_preset")), 0, 3, 0));
     const QJsonArray custom = legacy.value(QStringLiteral("eq_custom")).toArray();
     if (custom.size() == 10) {
         QJsonArray bands;
@@ -643,7 +696,7 @@ void HeadsetController::loadState()
     if (legacy.value(QStringLiteral("volume_limiter")).isBool())
         nova5.insert(QStringLiteral("volume_limiter"), legacy.value(QStringLiteral("volume_limiter")).toBool() ? 1 : 0);
     if (legacy.value(QStringLiteral("inactive_time")).isDouble())
-        nova5.insert(QStringLiteral("inactive_time"), qBound(0, legacy.value(QStringLiteral("inactive_time")).toInt(), 90));
+        nova5.insert(QStringLiteral("inactive_time"), jsonInt(legacy.value(QStringLiteral("inactive_time")), 0, 90, 5));
     m_state.insert(QStringLiteral("1038:2232"), nova5);
     saveState();
 }

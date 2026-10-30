@@ -9,6 +9,9 @@ ApplicationWindow {
     id: root
 
     property bool eqDirty: false
+    property bool inactiveKnown: false
+    // Converted from C++ once per change instead of on every has() call.
+    final readonly property list<string> caps: HeadsetController.capabilities
     readonly property list<string> standardFrequencies: ["32", "64", "125", "250", "500", "1k", "2k", "4k", "8k", "16k"]
 
     readonly property bool hasGeneral: has("CAP_INACTIVE_TIME") || has("CAP_VOLUME_LIMITER") || has("CAP_LIGHTS")
@@ -29,7 +32,7 @@ ApplicationWindow {
     font.pixelSize: 14
 
     function has(cap: string): bool {
-        return HeadsetController.capabilities.indexOf(cap) >= 0
+        return caps.indexOf(cap) >= 0
     }
 
     function presetLabel(name: string): string {
@@ -65,7 +68,9 @@ ApplicationWindow {
 
     // The headset cannot report most settings: show the last ones applied.
     function syncControls() {
-        inactive.currentIndex = Math.max(0, inactive.indexOfValue(HeadsetController.setting("inactive_time")))
+        const minutes = HeadsetController.setting("inactive_time")
+        inactiveKnown = minutes >= 0
+        inactive.currentIndex = Math.max(0, inactive.indexOfValue(minutes))
         if (!eqDirty)
             setBands(HeadsetController.activeBands)
     }
@@ -126,6 +131,7 @@ ApplicationWindow {
                 Layout.preferredHeight: 40
             }
             ColumnLayout {
+                Layout.fillWidth: true
                 spacing: 4
                 Text {
                     textFormat: Text.PlainText
@@ -138,6 +144,8 @@ ApplicationWindow {
                 }
                 Text {
                     textFormat: Text.PlainText
+                    Layout.fillWidth: true
+                    elide: Text.ElideRight
                     text: HeadsetController.connected ? HeadsetController.deviceName : "Arctis Control"
                     color: Theme.text
                     font.family: Theme.display
@@ -147,12 +155,10 @@ ApplicationWindow {
                     font.capitalization: Font.AllUppercase
                 }
             }
-            Item { Layout.fillWidth: true }
-
             // Picker when more than one headset is connected
             ComboBox {
                 id: devicePicker
-                visible: HeadsetController.deviceNames.length > 1
+                visible: HeadsetController.deviceCount > 1
                 model: HeadsetController.deviceNames
                 currentIndex: HeadsetController.currentDevice
                 onActivated: (index) => HeadsetController.currentDevice = index
@@ -406,7 +412,7 @@ ApplicationWindow {
                         contentItem: Text {
                             textFormat: Text.PlainText
                             leftPadding: 12
-                            text: HeadsetController.setting("inactive_time") < 0 && HeadsetController.connected ? "—" : qsTr(inactive.displayText)
+                            text: root.inactiveKnown ? qsTr(inactive.displayText) : "—"
                             color: Theme.text
                             font.family: Theme.display
                             font.pixelSize: 13
@@ -495,7 +501,7 @@ ApplicationWindow {
                 Layout.columnSpan: grid.columns
 
                 Flow {
-                    visible: root.has("CAP_EQUALIZER_PRESET") && HeadsetController.presetNames.length > 0
+                    visible: root.has("CAP_EQUALIZER_PRESET") && HeadsetController.presetCount > 0
                     Layout.fillWidth: true
                     spacing: 8
                     Repeater {

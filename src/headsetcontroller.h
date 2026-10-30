@@ -23,6 +23,7 @@ class HeadsetController : public QObject
     Q_PROPERTY(bool connected READ connected NOTIFY statusChanged)
     Q_PROPERTY(QString errorText READ errorText NOTIFY statusChanged)
     Q_PROPERTY(QStringList deviceNames READ deviceNames NOTIFY devicesChanged)
+    Q_PROPERTY(int deviceCount READ deviceCount NOTIFY devicesChanged)
     Q_PROPERTY(int currentDevice READ currentDevice WRITE setCurrentDevice NOTIFY deviceChanged)
     Q_PROPERTY(QString deviceName READ deviceName NOTIFY deviceChanged)
     Q_PROPERTY(QString deviceId READ deviceId NOTIFY deviceChanged)
@@ -35,6 +36,7 @@ class HeadsetController : public QObject
     Q_PROPERTY(QString updatedText READ updatedText NOTIFY statusChanged)
 
     Q_PROPERTY(QStringList presetNames READ presetNames NOTIFY deviceChanged)
+    Q_PROPERTY(int presetCount READ presetCount NOTIFY deviceChanged)
     Q_PROPERTY(int eqBands READ eqBands NOTIFY deviceChanged)
     Q_PROPERTY(double eqMin READ eqMin NOTIFY deviceChanged)
     Q_PROPERTY(double eqMax READ eqMax NOTIFY deviceChanged)
@@ -49,6 +51,7 @@ class HeadsetController : public QObject
 
 public:
     explicit HeadsetController(QObject *parent = nullptr);
+    ~HeadsetController() override;
 
     // Development mode: use HeadsetControl's mock device.
     static void setTestDevice(bool enabled);
@@ -56,6 +59,7 @@ public:
     bool connected() const { return m_current >= 0; }
     QString errorText() const { return m_errorText; }
     QStringList deviceNames() const;
+    int deviceCount() const { return int(m_devices.size()); }
     int currentDevice() const { return m_current; }
     void setCurrentDevice(int index);
     QString deviceName() const;
@@ -69,6 +73,7 @@ public:
     QString updatedText() const { return m_updatedText; }
 
     QStringList presetNames() const;
+    int presetCount() const { return int(presetNames().size()); }
     int eqBands() const;
     double eqMin() const;
     double eqMax() const;
@@ -101,11 +106,16 @@ private:
     struct Device {
         QString id;       // "1038:2232": key of the saved settings
         QString selector; // "0x1038:0x2232": the format "headsetcontrol -d" requires
-        QString name; // "Arctis Nova (5/5X)"
+        QString name;     // "Arctis Nova (5/5X)"
         QStringList caps;
         QJsonObject status;
         QStringList presetNames;
         QList<QList<double>> presetBands;
+        // Equalizer geometry, validated once when the device is detected.
+        int eqBands = 0;
+        double eqMin = -10;
+        double eqMax = 10;
+        double eqStep = 1;
     };
 
     struct Job {
@@ -113,6 +123,7 @@ private:
         std::function<void(QJsonObject &state)> onSuccess;
         QString successMessage;
         bool isRefresh = false;
+        QString deviceId; // headset whose saved state onSuccess updates
     };
 
     const Device *device() const;
@@ -122,7 +133,6 @@ private:
     void handleFinished(const QByteArray &output, const QString &failure);
     void applyDevices(const QJsonArray &devices, const QByteArray &rawOutput);
     void setNoDevice(const QString &reason);
-    QJsonObject &currentState();
     void loadState();
     void saveState() const;
 

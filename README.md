@@ -62,8 +62,22 @@ cmake --build build
 | `src/` | `HeadsetController`: detects headsets, validates and runs `headsetcontrol`, stores settings |
 | `qml/` | User interface: window, cards, setting controls, battery ring, equalizer bands |
 | `i18n/` | Translations (source strings are in English) |
+| `tests/security/` | Security test suite and fake `headsetcontrol` |
 | `assets/` | Icon and headset illustration |
 | `packaging/` | `PKGBUILD` and `.desktop` launcher |
+
+### Tests
+
+```
+./build/arctis-control --test-device --self-test   # functional test against the mock headset
+python3 tests/security/run.py                       # security tests (ASan + UBSan, a few minutes)
+```
+
+The security suite builds the app against a fake `headsetcontrol` (CMake option
+`ARCTIS_HEADSETCONTROL`, tests only) and feeds it hostile input: malformed, huge, endless, hanging
+or crashing output, HTML in names and error messages, absurd equalizer data and malicious
+`state.json` files. Every case must exit cleanly with no sanitizer reports and no network request,
+and every write command must target a single headset with `-d`.
 
 ### Translations
 

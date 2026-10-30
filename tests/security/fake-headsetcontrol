@@ -1,0 +1,37 @@
+#!/bin/bash
+# Fake headsetcontrol for security tests. The scenario is read from a file next
+# to this script because the app runs headsetcontrol with a minimal environment.
+DIR=$(dirname "$(readlink -f "$0")")
+SC=$(cat "$DIR/scenario")
+echo "$SC $*" >> "$DIR/calls.log"
+SET=0; for a in "$@"; do [ "$a" = "-d" ] && SET=1; done
+HTML='<img src=\"http://127.0.0.1:18777/LEAK.png\"><b>bold</b>'
+dev() { # $1=vendor $2=product $3=name
+cat <<J
+{"status":"success","device":"$3","vendor":"SteelSeries","product":"X","id_vendor":"$1","id_product":"$2",
+ "capabilities":["CAP_BATTERY_STATUS","CAP_SIDETONE","CAP_EQUALIZER","CAP_EQUALIZER_PRESET","CAP_INACTIVE_TIME","CAP_NOTIFICATION_SOUND","CAP_LIGHTS","CAP_VOICE_PROMPTS","CAP_ROTATE_TO_MUTE","CAP_MICROPHONE_MUTE_LED_BRIGHTNESS","CAP_MICROPHONE_VOLUME","CAP_VOLUME_LIMITER","CAP_BT_WHEN_POWERED_ON","CAP_BT_CALL_VOLUME","CAP_NOISE_FILTER"],
+ "battery":{"status":"BATTERY_AVAILABLE","level":55},"equalizer":{"bands":10,"baseline":0,"step":0.5,"min":-10,"max":10},
+ "equalizer_presets":{"flat":[0,0,0,0,0,0,0,0,0,0],"bass":[1,2,3,4,5,0,0,0,0,0]}}
+J
+}
+V=0x1038; [ -n "$TESTV" ] && V=$TESTV
+case "$SC" in
+  garbage)      head -c 200000 /dev/urandom ;;
+  empty_fail)   echo "fatal: $HTML" >&2; exit 1 ;;
+  huge)         printf '{"devices":[{"device":"'; head -c 5000000 /dev/zero | tr '\0' 'A'; printf '"}]}' ;;
+  endless)      yes '{"devices":[' ;;
+  hang)         sleep 60 ;;
+  crash)        kill -SEGV $$ ;;
+  html_names)   printf '{"devices":['; dev 0x1038 0x2232 "SteelSeries $HTML"; printf ']}' ;;
+  many_devices) printf '{"devices":['; for i in $(seq 1 300); do [ $i -gt 1 ] && printf ','; dev 0x1038 $(printf '0x%04x' $i) "SteelSeries $(head -c 20000 /dev/zero | tr '\0' 'N')"; done; printf ']}' ;;
+  weird_eq)     printf '{"devices":[{"status":"success","device":"SteelSeries W","id_vendor":"0x1038","id_product":"0x0001","capabilities":["CAP_EQUALIZER","CAP_EQUALIZER_PRESET","CAP_BATTERY_STATUS"],"battery":{"level":999999,"status":"x"},"chatmix":-77,"equalizer":{"bands":1000000000,"min":50,"max":-50,"step":0},"equalizer_presets":{'
+                for i in $(seq 1 5000); do [ $i -gt 1 ] && printf ','; printf '"p%d":[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34]' $i; done; printf '}}]}' ;;
+  bad_types)    printf '{"devices":[{"status":"success","device":12345,"id_vendor":"0x1038","id_product":["x"],"capabilities":"CAP_SIDETONE","battery":"full","equalizer":[1,2],"equalizer_presets":["a"],"sidetone":{"level":"loud"}}]}' ;;
+  deep)         printf '{"devices":'; for i in $(seq 1 100000); do printf '['; done; for i in $(seq 1 100000); do printf ']'; done; printf '}' ;;
+  regex_bomb)   printf '{"devices":[{"status":"success","device":"SteelSeries R","id_vendor":"0x1038","id_product":"0x0002","capabilities":["CAP_EQUALIZER_PRESET"],"equalizer_presets":{"'; head -c 900000 /dev/zero | tr '\0' 'a'; printf '":[1]}}]}' ;;
+  actions_html) if [ $SET = 1 ]; then printf '{"actions":[{"capability":"X","device":"T","status":"error","error_message":"%s"}],"devices":[]}' "$HTML"
+                else printf '{"devices":['; dev 0xf00b 0xa00c "HeadsetControl Test device"; printf ']}'; fi ;;
+  ok|ok_test)   [ "$SC" = ok_test ] && V=0xf00b
+                if [ $SET = 1 ]; then printf '{"actions":[{"capability":"X","device":"T","status":"success","value":1}],"devices":[]}'
+                else printf '{"devices":['; dev $V 0xa00c "Fake"; printf ']}'; fi ;;
+esac

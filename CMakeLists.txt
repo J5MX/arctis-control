@@ -1,8 +1,12 @@
 cmake_minimum_required(VERSION 3.21)
-project(arctis-control VERSION 0.4.0 LANGUAGES CXX)
+project(arctis-control VERSION 0.4.1 LANGUAGES CXX)
 
 find_package(Qt6 6.8 REQUIRED COMPONENTS Gui Network Qml Quick QuickControls2 LinguistTools)
 qt_standard_project_setup(REQUIRES 6.8)
+
+# Only for security tests: lets a test build run a fake headsetcontrol.
+# Release packages always use the system binary.
+set(ARCTIS_HEADSETCONTROL "/usr/bin/headsetcontrol" CACHE FILEPATH "headsetcontrol executable (tests only)")
 
 qt_add_executable(arctis-control src/main.cpp)
 
@@ -31,7 +35,8 @@ qt_add_qml_module(arctis-control
 )
 
 target_include_directories(arctis-control PRIVATE src)
-target_compile_definitions(arctis-control PRIVATE APP_VERSION="${PROJECT_VERSION}")
+target_compile_definitions(arctis-control PRIVATE APP_VERSION="${PROJECT_VERSION}"
+                                                   HEADSETCONTROL_PATH="${ARCTIS_HEADSETCONTROL}")
 target_compile_options(arctis-control PRIVATE -Wall -Wextra -Wpedantic)
 target_link_libraries(arctis-control PRIVATE Qt6::Gui Qt6::Network Qt6::Qml Qt6::Quick Qt6::QuickControls2)
 # No RUNPATH ($ORIGIN): the binary only loads system libraries.
