@@ -13,6 +13,10 @@ ecualizador (presets y bandas con el rango de cada modelo), apagado automático,
 volumen, luces, avisos de voz, Bluetooth, sidetone, volumen y LED del micrófono, filtro de ruido…
 Si hay varios auriculares conectados, permite elegir cuál controlar.
 
+Si usas un micrófono aparte, puedes **desactivar el micrófono del auricular** para que el sistema
+(y apps como Discord o los juegos) dejen de verlo. Cambia la tarjeta de sonido del auricular en
+PipeWire a su perfil de solo salida; WirePlumber recuerda la elección.
+
 Aplicación nativa en C++/Qt 6 (QML): sin navegador, sin servidor y sin conexiones de red. La
 interfaz está en inglés y cambia sola a español en sistemas en español.
 
@@ -34,7 +38,8 @@ makepkg -si
 Instala `/usr/bin/arctis-control`, el lanzador **Arctis Control** y su icono. Sustituye al antiguo
 paquete `nova5-panel` y recupera sus ajustes.
 
-- Dependencias: `headsetcontrol`, `qt6-base`, `qt6-declarative`, `qt6-svg`.
+- Dependencias: `headsetcontrol`, `qt6-base`, `qt6-declarative`, `qt6-svg`, `libpulse` (para
+  `pactl`, que usa el interruptor del micrófono con PipeWire).
 - Para compilar: `cmake`, `qt6-tools`.
 - Opcional: `ttf-fira-sans` para la tipografía.
 

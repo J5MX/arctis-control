@@ -2,6 +2,15 @@
 
 All notable changes to Arctis Control. Versions before 1.0 are previews.
 
+## 0.5.0 — 2026-10-30
+
+### Added
+- "Use the headset microphone" switch: turns the headset microphone off for people who use a
+  separate one, by switching its PipeWire sound card to the matching output-only profile (and
+  back). Works for any headset with a PipeWire card, independently of HeadsetControl.
+- Self-test and security suite cover it with a fake `pactl` (real Nova 5 profiles, hostile card
+  data, failures, hangs).
+
 ## 0.4.2 — 2026-10-30
 
 ### Changed

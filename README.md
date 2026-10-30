@@ -13,6 +13,10 @@ equalizer (presets and bands with each model's range), auto power-off, volume li
 voice prompts, Bluetooth, sidetone, microphone volume and mute LED, noise filter… If several
 headsets are connected, you can pick which one to control.
 
+If you use a separate microphone, you can also **turn the headset microphone off** so the system
+(and apps such as Discord or games) no longer see it. This switches the headset's PipeWire sound
+card to its output-only profile; WirePlumber remembers the choice.
+
 Native C++/Qt 6 (QML) application: no browser, no server and no network connections.
 The interface is in English and switches to Spanish automatically on Spanish systems.
 
@@ -34,7 +38,8 @@ makepkg -si
 This installs `/usr/bin/arctis-control`, the **Arctis Control** launcher and its icon. It replaces
 the older `nova5-panel` package and imports its settings.
 
-- Dependencies: `headsetcontrol`, `qt6-base`, `qt6-declarative`, `qt6-svg`.
+- Dependencies: `headsetcontrol`, `qt6-base`, `qt6-declarative`, `qt6-svg`, `libpulse` (for
+  `pactl`, used by the microphone switch with PipeWire).
 - Build dependencies: `cmake`, `qt6-tools`.
 - Optional: `ttf-fira-sans` for the interface font.
 
@@ -59,7 +64,7 @@ cmake --build build
 
 | Path | Contents |
 |---|---|
-| `src/` | `HeadsetController`: detects headsets, validates and runs `headsetcontrol`, stores settings |
+| `src/` | `HeadsetController` (detects headsets, runs `headsetcontrol`, stores settings) and `HeadsetMic` (headset microphone on/off via `pactl`) |
 | `qml/` | User interface: window, cards, setting controls, battery ring, equalizer bands |
 | `i18n/` | Translations (source strings are in English) |
 | `tests/security/` | Security test suite and fake `headsetcontrol` |
@@ -73,10 +78,10 @@ cmake --build build
 python3 tests/security/run.py                       # security tests (ASan + UBSan, a few minutes)
 ```
 
-The security suite builds the app against a fake `headsetcontrol` (CMake option
-`ARCTIS_HEADSETCONTROL`, tests only) and feeds it hostile input: malformed, huge, endless, hanging
-or crashing output, HTML in names and error messages, absurd equalizer data and malicious
-`state.json` files. Every case must exit cleanly with no sanitizer reports and no network request,
+The security suite builds the app against a fake `headsetcontrol` and a fake `pactl` (CMake
+options `ARCTIS_HEADSETCONTROL` and `ARCTIS_PACTL`, tests only) and feeds it hostile input:
+malformed, huge, endless, hanging or crashing output, HTML in names and error messages, absurd
+equalizer data, malicious `state.json` files and malicious PipeWire card data. Every case must exit cleanly with no sanitizer reports and no network request,
 and every write command must target a single headset with `-d`.
 
 ### Translations
@@ -96,8 +101,9 @@ embedded in the binary. To add a new language, add its `i18n/arctis-control_<lan
 - No sockets and no network connections. The QML engine uses a network access manager that
   rejects every URL that is not an internal (qrc) resource.
 - All text is rendered as plain text: messages containing HTML are never interpreted.
-- `headsetcontrol` is run by absolute path with an argument list (no shell), a minimal
-  environment, a 20 s timeout and a 1 MiB output cap; commands run one at a time.
+- `headsetcontrol` and `pactl` are run by absolute path with an argument list (no shell), a
+  minimal environment, a timeout and an output cap; commands run one at a time. Sound card and
+  profile names read from PipeWire are validated before being passed back to `pactl`.
 - Every command carries `-d` with the selected headset, so it never reaches other connected ones.
 - Values are validated against a closed table of settings and ranges and against the capabilities
   the headset reports. The result of each command is checked in HeadsetControl's response.

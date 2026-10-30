@@ -92,49 +92,72 @@
     </message>
 </context>
 <context>
+    <name>HeadsetMic</name>
+    <message>
+        <location filename="../src/headsetmic.cpp" line="133"/>
+        <source>Unexpected sound card data</source>
+        <translation>Datos inesperados de la tarjeta de sonido</translation>
+    </message>
+    <message>
+        <location filename="../src/headsetmic.cpp" line="152"/>
+        <source>Headset microphone enabled</source>
+        <translation>Micrófono del auricular activado</translation>
+    </message>
+    <message>
+        <location filename="../src/headsetmic.cpp" line="152"/>
+        <source>Headset microphone disabled</source>
+        <translation>Micrófono del auricular desactivado</translation>
+    </message>
+    <message>
+        <location filename="../src/headsetmic.cpp" line="154"/>
+        <source>Could not change the sound card profile</source>
+        <translation>No se pudo cambiar el perfil de la tarjeta de sonido</translation>
+    </message>
+</context>
+<context>
     <name>Main</name>
     <message>
-        <location filename="../qml/Main.qml" line="40"/>
+        <location filename="../qml/Main.qml" line="41"/>
         <source>Flat</source>
         <translation>Plano</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="41"/>
+        <location filename="../qml/Main.qml" line="42"/>
         <source>Bass</source>
         <translation>Graves</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="42"/>
+        <location filename="../qml/Main.qml" line="43"/>
         <source>Focus</source>
         <translation>Enfoque</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="43"/>
+        <location filename="../qml/Main.qml" line="44"/>
         <source>Smiley</source>
         <translation>Smiley</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="217"/>
+        <location filename="../qml/Main.qml" line="238"/>
         <source>CONNECTED</source>
         <translation>CONECTADO</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="217"/>
+        <location filename="../qml/Main.qml" line="238"/>
         <source>DISCONNECTED</source>
         <translation>DESCONECTADO</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="255"/>
+        <location filename="../qml/Main.qml" line="276"/>
         <source>No headset detected</source>
         <translation>Ningún auricular detectado</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="263"/>
+        <location filename="../qml/Main.qml" line="284"/>
         <source>Looking for headsets…</source>
         <translation>Buscando auriculares…</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="272"/>
+        <location filename="../qml/Main.qml" line="293"/>
         <source>• Plug in the USB receiver (or the cable) and turn the headset on.
 • Check that HeadsetControl sees it: headsetcontrol -b
 • If it reports missing permissions, replug the receiver after installing headsetcontrol (it installs udev rules).
@@ -145,215 +168,230 @@
 • Compatibles: Arctis 1, 7, 7+, 7X, 7P, 9, Pro (2019 y Wireless), GameBuds y Nova 3, 3P, 5, 5X, 7, 7P y Pro Wireless.</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="310"/>
+        <location filename="../qml/Main.qml" line="331"/>
         <source>game</source>
         <translation>juego</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="310"/>
+        <location filename="../qml/Main.qml" line="331"/>
         <source>chat</source>
         <translation>chat</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="320"/>
+        <location filename="../qml/Main.qml" line="341"/>
         <source>Battery</source>
         <translation>Batería</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="338"/>
+        <location filename="../qml/Main.qml" line="359"/>
         <source>Wired</source>
         <translation>Con cable</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="339"/>
+        <location filename="../qml/Main.qml" line="360"/>
         <source>⚡ Charging</source>
         <translation>⚡ Cargando</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="340"/>
+        <location filename="../qml/Main.qml" line="361"/>
         <source>In use</source>
         <translation>En uso</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="341"/>
+        <location filename="../qml/Main.qml" line="362"/>
         <source>Off or out of range</source>
         <translation>Apagado o fuera de alcance</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="352"/>
+        <location filename="../qml/Main.qml" line="373"/>
         <source>≈ %1 h %2 min left</source>
         <translation>≈ %1 h %2 min restantes</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="359"/>
+        <location filename="../qml/Main.qml" line="380"/>
         <source>Updated %1</source>
         <translation>Actualizado %1</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="369"/>
+        <location filename="../qml/Main.qml" line="390"/>
         <source>Settings</source>
         <translation>Ajustes</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="382"/>
+        <location filename="../qml/Main.qml" line="403"/>
         <source>Auto power-off</source>
         <translation>Apagado automático</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="383"/>
+        <location filename="../qml/Main.qml" line="404"/>
         <source>After this long without use</source>
         <translation>Tras este tiempo sin uso</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="391"/>
+        <location filename="../qml/Main.qml" line="412"/>
         <source>Never</source>
         <translation>Nunca</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="452"/>
+        <location filename="../qml/Main.qml" line="473"/>
         <source>Volume limiter</source>
         <translation>Limitador de volumen</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="453"/>
+        <location filename="../qml/Main.qml" line="474"/>
         <source>Protects your ears from loud peaks</source>
         <translation>Protege los oídos de picos fuertes</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="458"/>
+        <location filename="../qml/Main.qml" line="479"/>
         <source>Lights</source>
         <translation>Luces</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="459"/>
+        <location filename="../qml/Main.qml" line="480"/>
         <source>Headset lighting</source>
         <translation>Iluminación del auricular</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="464"/>
+        <location filename="../qml/Main.qml" line="485"/>
         <source>Voice prompts</source>
         <translation>Avisos de voz</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="465"/>
+        <location filename="../qml/Main.qml" line="486"/>
         <source>Spoken messages when powering on or switching modes</source>
         <translation>Mensajes hablados al encender o cambiar de modo</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="470"/>
+        <location filename="../qml/Main.qml" line="491"/>
         <source>Bluetooth on power-up</source>
         <translation>Bluetooth al encender</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="471"/>
+        <location filename="../qml/Main.qml" line="492"/>
         <source>Turns Bluetooth on together with the headset</source>
         <translation>Activa el Bluetooth junto con el auricular</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="476"/>
+        <location filename="../qml/Main.qml" line="497"/>
         <source>Bluetooth call volume</source>
         <translation>Volumen de llamadas Bluetooth</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="481"/>
+        <location filename="../qml/Main.qml" line="502"/>
         <source>Play notification sound</source>
         <translation>Probar sonido de aviso</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="490"/>
+        <location filename="../qml/Main.qml" line="511"/>
         <source>The headset cannot report these settings: the last value applied from here is shown.</source>
         <translation>El auricular no deja leer estos ajustes: se muestra el último aplicado desde aquí.</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="499"/>
+        <location filename="../qml/Main.qml" line="520"/>
         <source>Equalizer</source>
         <translation>Ecualizador</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="572"/>
+        <location filename="../qml/Main.qml" line="593"/>
         <source>%1 bands from %2 to +%3 dB in steps of %4.</source>
         <translation>%1 bandas de %2 a +%3 dB en pasos de %4.</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="575"/>
+        <location filename="../qml/Main.qml" line="596"/>
         <source>Frequencies are approximate.</source>
         <translation>Frecuencias orientativas.</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="580"/>
+        <location filename="../qml/Main.qml" line="601"/>
         <source>Reset to 0</source>
         <translation>Poner a 0</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="587"/>
+        <location filename="../qml/Main.qml" line="608"/>
         <source>Apply equalizer</source>
         <translation>Aplicar ecualizador</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="600"/>
+        <location filename="../qml/Main.qml" line="621"/>
         <source>Microphone</source>
         <translation>Micrófono</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="613"/>
+        <location filename="../qml/Main.qml" line="635"/>
+        <source>Use the headset microphone</source>
+        <translation>Usar el micrófono del auricular</translation>
+    </message>
+    <message>
+        <location filename="../qml/Main.qml" line="644"/>
+        <source>Turn it off if you use a separate microphone, so apps cannot pick it by mistake.</source>
+        <translation>Desactívalo si usas otro micrófono, para que las apps no lo elijan por error.</translation>
+    </message>
+    <message>
+        <location filename="../qml/Main.qml" line="645"/>
+        <source>Off: the system does not see the headset microphone.</source>
+        <translation>Desactivado: el sistema no ve el micrófono del auricular.</translation>
+    </message>
+    <message>
+        <location filename="../qml/Main.qml" line="674"/>
         <source>Sidetone</source>
         <translation>Sidetone</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="614"/>
+        <location filename="../qml/Main.qml" line="675"/>
         <source>How much you hear yourself through the headset</source>
         <translation>Cuánto te oyes a ti mismo por los auriculares</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="620"/>
+        <location filename="../qml/Main.qml" line="681"/>
         <source>Microphone volume</source>
         <translation>Volumen del micrófono</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="621"/>
+        <location filename="../qml/Main.qml" line="682"/>
         <source>Gain of the headset&apos;s own microphone</source>
         <translation>Ganancia del micro del propio auricular</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="627"/>
+        <location filename="../qml/Main.qml" line="688"/>
         <source>Mute LED brightness</source>
         <translation>Brillo del LED de silencio</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="628"/>
-        <location filename="../qml/Main.qml" line="634"/>
+        <location filename="../qml/Main.qml" line="689"/>
+        <location filename="../qml/Main.qml" line="695"/>
         <source>Off</source>
         <translation>Apagado</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="628"/>
-        <location filename="../qml/Main.qml" line="634"/>
+        <location filename="../qml/Main.qml" line="689"/>
+        <location filename="../qml/Main.qml" line="695"/>
         <source>Low</source>
         <translation>Bajo</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="628"/>
+        <location filename="../qml/Main.qml" line="689"/>
         <source>Medium</source>
         <translation>Medio</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="628"/>
-        <location filename="../qml/Main.qml" line="634"/>
+        <location filename="../qml/Main.qml" line="689"/>
+        <location filename="../qml/Main.qml" line="695"/>
         <source>High</source>
         <translation>Alto</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="633"/>
+        <location filename="../qml/Main.qml" line="694"/>
         <source>Noise filter</source>
         <translation>Filtro de ruido</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="639"/>
+        <location filename="../qml/Main.qml" line="700"/>
         <source>Rotate to mute</source>
         <translation>Silenciar al subir el micro</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="640"/>
+        <location filename="../qml/Main.qml" line="701"/>
         <source>Mutes when the boom is raised</source>
         <translation>Se silencia al levantar la varilla</translation>
     </message>

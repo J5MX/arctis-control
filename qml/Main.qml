@@ -18,8 +18,9 @@ ApplicationWindow {
         || has("CAP_VOICE_PROMPTS") || has("CAP_BT_WHEN_POWERED_ON") || has("CAP_BT_CALL_VOLUME")
         || has("CAP_NOTIFICATION_SOUND")
     readonly property bool hasEq: has("CAP_EQUALIZER") || has("CAP_EQUALIZER_PRESET")
-    readonly property bool hasMic: has("CAP_SIDETONE") || has("CAP_MICROPHONE_VOLUME") || has("CAP_ROTATE_TO_MUTE")
-        || has("CAP_MICROPHONE_MUTE_LED_BRIGHTNESS") || has("CAP_NOISE_FILTER")
+    readonly property bool hasMicSettings: has("CAP_SIDETONE") || has("CAP_MICROPHONE_VOLUME")
+        || has("CAP_ROTATE_TO_MUTE") || has("CAP_MICROPHONE_MUTE_LED_BRIGHTNESS") || has("CAP_NOISE_FILTER")
+    readonly property bool hasMic: HeadsetMic.available || hasMicSettings
 
     width: 1000
     height: 860
@@ -96,6 +97,26 @@ ApplicationWindow {
         target: HeadsetController
         property: "polling"
         value: root.visible && root.visibility !== Window.Minimized
+    }
+    Binding {
+        target: HeadsetMic
+        property: "polling"
+        value: root.visible && root.visibility !== Window.Minimized
+    }
+    // The PipeWire sound card of the selected headset.
+    Binding {
+        target: HeadsetMic
+        property: "usbId"
+        value: HeadsetController.deviceId
+    }
+    Connections {
+        target: HeadsetMic
+        // The switch follows PipeWire once the change is confirmed (or has failed).
+        function onNotify(message: string, error: bool) {
+            toast.show(message, error)
+            micSwitch.checked = HeadsetMic.enabled
+        }
+        function onChanged() { micSwitch.checked = HeadsetMic.enabled }
     }
 
     // Orange glow in the top-right corner
@@ -600,6 +621,46 @@ ApplicationWindow {
                 title: qsTr("Microphone")
                 Layout.fillWidth: true
                 Layout.columnSpan: grid.columns
+
+                RowLayout {
+                    visible: HeadsetMic.available
+                    Layout.fillWidth: true
+                    spacing: 12
+                    ColumnLayout {
+                        Layout.fillWidth: true
+                        Layout.preferredWidth: 1
+                        spacing: 2
+                        Text {
+                            textFormat: Text.PlainText
+                            text: qsTr("Use the headset microphone")
+                            color: Theme.text
+                            font.weight: Font.Medium
+                        }
+                        Text {
+                            textFormat: Text.PlainText
+                            Layout.fillWidth: true
+                            wrapMode: Text.WordWrap
+                            text: HeadsetMic.enabled
+                                ? qsTr("Turn it off if you use a separate microphone, so apps cannot pick it by mistake.")
+                                : qsTr("Off: the system does not see the headset microphone.")
+                            color: Theme.muted
+                            font.pixelSize: 13
+                        }
+                    }
+                    Toggle {
+                        id: micSwitch
+                        checked: HeadsetMic.enabled
+                        enabled: !HeadsetMic.busy
+                        onToggled: HeadsetMic.setEnabled(checked)
+                    }
+                }
+
+                Rectangle {
+                    visible: HeadsetMic.available && root.hasMicSettings
+                    Layout.fillWidth: true
+                    height: 1
+                    color: Theme.line
+                }
 
                 GridLayout {
                     Layout.fillWidth: true

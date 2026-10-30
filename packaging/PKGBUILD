@@ -4,13 +4,13 @@
 # Usage:  cd packaging && makepkg -si
 
 pkgname=arctis-control
-pkgver=0.4.2
+pkgver=0.5.0
 pkgrel=1
 pkgdesc="Unofficial control panel for SteelSeries Arctis headsets: battery, equalizer and settings (HeadsetControl)"
 arch=('x86_64')
 url="https://github.com/J5MX/arctis-control"
 license=('GPL-3.0-or-later')
-depends=('headsetcontrol' 'qt6-base' 'qt6-declarative' 'qt6-svg' 'gcc-libs' 'glibc')
+depends=('headsetcontrol' 'qt6-base' 'qt6-declarative' 'qt6-svg' 'libpulse' 'gcc-libs' 'glibc')
 makedepends=('cmake' 'qt6-tools')
 optdepends=('ttf-fira-sans: interface font')
 provides=('nova5-panel')

@@ -12,6 +12,7 @@
 #include <QTranslator>
 
 #include "headsetcontroller.h"
+#include "headsetmic.h"
 
 #include <cstdio>
 #include <functional>
@@ -62,9 +63,34 @@ int runSelfTest(QGuiApplication &app)
 
     int index = -1;
     int failures = 0;
+
+    // Last step: toggle the headset microphone through PipeWire, if the mock
+    // headset has a sound card (only with a fake pactl; real systems have none).
+    HeadsetMic mic;
+    bool micStep = false;
+    auto finish = [&] {
+        mic.setUsbId(controller.deviceId());
+        QObject::connect(&mic, &HeadsetMic::cardsLoaded, &app, [&] {
+            if (micStep)
+                return;
+            micStep = true;
+            if (!mic.available()) {
+                std::printf("SKIP %-16s %s\n", "headset_mic", "no PipeWire card for this headset");
+                return QCoreApplication::exit(failures);
+            }
+            mic.setEnabled(!mic.enabled());
+        });
+        QObject::connect(&mic, &HeadsetMic::notify, &app, [&](const QString &message, bool error) {
+            failures += error ? 1 : 0;
+            std::printf("%-4s %-16s %s\n", error ? "FAIL" : "OK", "headset_mic", qPrintable(message));
+            QCoreApplication::exit(failures);
+        });
+        mic.refresh();
+    };
+
     auto next = [&] {
         if (++index >= steps.size())
-            return QCoreApplication::exit(failures);
+            return finish();
         steps.at(index).run();
     };
     QObject::connect(&controller, &HeadsetController::notify, &app, [&](const QString &message, bool error) {

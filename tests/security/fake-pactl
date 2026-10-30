@@ -1,0 +1,35 @@
+#!/bin/bash
+# Fake pactl for tests. The scenario is read from a file next to this script.
+# "list cards" returns a sound card for the mock headset (0xf00b:0xa00c) whose
+# profiles are those of a real Arctis Nova 5, with the microphone currently off.
+DIR=$(dirname "$(readlink -f "$0")")
+SC=$(cat "$DIR/pactl-scenario" 2>/dev/null || echo ok)
+echo "$SC $*" >> "$DIR/pactl-calls.log"
+
+card() { # $1=card name $2=profile prefix
+cat <<J
+[{"name":"$1","active_profile":"$2output:analog-stereo",
+  "properties":{"device.vendor.id":"0xf00b","device.product.id":"0xa00c","device.bus":"usb"},
+  "profiles":{
+   "off":{"sinks":0,"sources":0,"priority":0,"available":true},
+   "$2output:analog-stereo+input:mono-fallback":{"sinks":1,"sources":1,"priority":6501,"available":true},
+   "$2output:analog-stereo":{"sinks":1,"sources":0,"priority":6500,"available":true},
+   "$2output:iec958-stereo+input:mono-fallback":{"sinks":1,"sources":1,"priority":5501,"available":true},
+   "$2output:iec958-stereo":{"sinks":1,"sources":0,"priority":5500,"available":true},
+   "$2pro-audio":{"sinks":1,"sources":1,"priority":1,"available":true},
+   "$2input:mono-fallback":{"sinks":0,"sources":1,"priority":1,"available":true}}}]
+J
+}
+
+if [ "$1" = "set-card-profile" ]; then
+  [ "$SC" = set_fail ] && { echo "Failure: No such entity" >&2; exit 1; }
+  exit 0
+fi
+case "$SC" in
+  ok|set_fail) card "alsa_card.usb-Fake_Headset-00" "" ;;
+  dash_names)  card "-h" "--" ;;
+  html)        card "<img src=\"http://127.0.0.1:18777/PACTL.png\">" "" ;;
+  garbage)     head -c 100000 /dev/urandom ;;
+  huge)        printf '['; head -c 6000000 /dev/zero | tr '\0' ' '; printf ']' ;;
+  hang)        sleep 60 ;;
+esac

@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 """Security tests for Arctis Control.
 
-Builds the app with AddressSanitizer + UBSan against a fake headsetcontrol and feeds it
-hostile input: malformed, huge, endless, hanging or crashing headsetcontrol output, HTML in
-names and error messages, absurd equalizer data, and malicious state.json files (huge,
-deeply nested, wrong types, out-of-range values, FIFO, directory, dangling symlink).
+Builds the app with AddressSanitizer + UBSan against a fake headsetcontrol and a fake pactl
+and feeds it hostile input: malformed, huge, endless, hanging or crashing headsetcontrol output,
+HTML in names and error messages, absurd equalizer data, malicious state.json files (huge,
+deeply nested, wrong types, out-of-range values, FIFO, directory, dangling symlink) and
+malicious PipeWire card data (garbage, huge, hanging, HTML and option-like names).
 
 Each case must exit cleanly, without sanitizer reports and without any network request
 (an HTTP server listens for <img src="http://..."> leaks).
@@ -17,11 +18,13 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(os.path.dirname(HERE))
 WORK = tempfile.mkdtemp(prefix="arctis-sec-")
 FAKE = os.path.join(WORK, "fake-headsetcontrol")
+FAKE_PACTL = os.path.join(WORK, "fake-pactl")
 BUILD = os.path.join(WORK, "build")
 shutil.copy(os.path.join(HERE, "fake-headsetcontrol"), FAKE)
+shutil.copy(os.path.join(HERE, "fake-pactl"), FAKE_PACTL)
 
 print("Building with ASan/UBSan…")
-subprocess.run(["cmake", "-S", ROOT, "-B", BUILD, "-DCMAKE_BUILD_TYPE=Debug", f"-DARCTIS_HEADSETCONTROL={FAKE}",
+subprocess.run(["cmake", "-S", ROOT, "-B", BUILD, "-DCMAKE_BUILD_TYPE=Debug", f"-DARCTIS_HEADSETCONTROL={FAKE}", f"-DARCTIS_PACTL={FAKE_PACTL}",
                 "-DCMAKE_CXX_FLAGS=-fsanitize=address,undefined -fno-omit-frame-pointer -fno-sanitize-recover=undefined"],
                check=True, stdout=subprocess.DEVNULL)
 subprocess.run(["cmake", "--build", BUILD, "-j", str(os.cpu_count())], check=True, stdout=subprocess.DEVNULL)
@@ -35,9 +38,10 @@ server = http.server.HTTPServer(("127.0.0.1", 18777), Trap)
 threading.Thread(target=server.serve_forever, daemon=True).start()
 
 failures = 0
-def run(name, scenario, args, cfg, expect_exit=0):
+def run(name, scenario, args, cfg, expect_exit=0, pactl="ok"):
     global failures
     open(os.path.join(WORK, "scenario"), "w").write(scenario + "\n")
+    open(os.path.join(WORK, "pactl-scenario"), "w").write(pactl + "\n")
     env = dict(os.environ, XDG_CONFIG_HOME=cfg, LANG="en_US.UTF-8", QT_QPA_PLATFORM="offscreen",
                ASAN_OPTIONS="detect_leaks=0")
     t0 = time.time()
@@ -64,6 +68,24 @@ for sc in ["garbage", "empty_fail", "huge", "endless", "hang", "crash", "html_na
     run("headsetcontrol:" + sc, sc, shot, fresh_cfg(sc))
 
 run("self-test ok", "ok_test", ["--test-device", "--self-test"], fresh_cfg("selftest-ok"))
+
+# Headset microphone through PipeWire (fake pactl). The real Nova 5 profiles with the mic
+# off: enabling it must pick the same output mode with input.
+pactl_log = os.path.join(WORK, "pactl-calls.log")
+open(pactl_log, "w").close()
+run("pactl: enable mic", "ok_test", ["--test-device", "--self-test"], fresh_cfg("mic-ok"))
+sets = [l for l in open(pactl_log).read().splitlines() if "set-card-profile" in l]
+expected = "set-card-profile alsa_card.usb-Fake_Headset-00 output:analog-stereo+input:mono-fallback"
+ok = len(sets) == 1 and sets[0].endswith(expected)
+failures += 0 if ok else 1
+print(f"{'PASS' if ok else 'FAIL'}  pactl: picks right profile   ({sets})")
+run("pactl: set fails", "ok_test", ["--test-device", "--self-test"], fresh_cfg("mic-fail"), expect_exit=1, pactl="set_fail")
+for sc in ["garbage", "huge", "hang", "html", "dash_names"]:
+    open(pactl_log, "w").close()
+    run("pactl:" + sc, "ok_test", ["--test-device", "--self-test"], fresh_cfg("mic-" + sc), pactl=sc)
+    if any("set-card-profile" in l for l in open(pactl_log)):
+        failures += 1
+        print(f"FAIL  pactl:{sc} must not change any profile")
 run("self-test html errors", "actions_html", ["--test-device", "--self-test"], fresh_cfg("selftest-err"), expect_exit=14)
 
 dev = "1038:a00c"
