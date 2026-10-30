@@ -2,7 +2,7 @@
 
 All notable changes to Arctis Control. Versions before 1.0 are previews.
 
-## Unreleased (0.6.0)
+## 0.6.0 — 2026-10-30
 
 ### Added
 - Tray icon with the battery level drawn on it; click to show or hide the window, right-click
