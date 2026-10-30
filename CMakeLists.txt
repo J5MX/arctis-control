@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.21)
-project(arctis-control VERSION 0.4.1 LANGUAGES CXX)
+project(arctis-control VERSION 0.4.2 LANGUAGES CXX)
 
 find_package(Qt6 6.8 REQUIRED COMPONENTS Gui Network Qml Quick QuickControls2 LinguistTools)
 qt_standard_project_setup(REQUIRES 6.8)

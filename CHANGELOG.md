@@ -2,6 +2,11 @@
 
 All notable changes to Arctis Control. Versions before 1.0 are previews.
 
+## 0.4.2 — 2026-10-30
+
+### Changed
+- New original app icon (headset with equalizer bars), replacing the recoloured SteelSeries logo.
+
 ## 0.4.1 — 2026-10-30
 
 ### Fixed

@@ -118,6 +118,5 @@ embedded in the binary. To add a new language, add its `i18n/arctis-control_<lan
 
 GPL-3.0-or-later (see `LICENSE`).
 
-The icon uses the SteelSeries logo (Wikimedia Commons, `File:Steelseries_logo.svg`), recoloured;
-it is a registered trademark and should be replaced with an original icon before the repository is
-made public. The headset illustration (`assets/headset.svg`) is original artwork.
+The app icon (`assets/icon.svg`) and the headset illustration (`assets/headset.svg`) are original
+artwork, released under the same license.
