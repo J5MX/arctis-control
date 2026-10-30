@@ -96,6 +96,15 @@ Then translate the `.ts` file with Qt Linguist (or any text editor) and rebuild;
 embedded in the binary. To add a new language, add its `i18n/arctis-control_<lang>.ts` to
 `qt_add_translations` in `CMakeLists.txt`.
 
+## Reporting issues
+
+Bug reports and reports from owners of other models are very welcome. Please include:
+
+- Your headset model and your distribution.
+- The output of `headsetcontrol --version` and `headsetcontrol -o json` (it contains no personal
+  data: just the model, its capabilities and battery state).
+- What you did, what you expected and what happened.
+
 ## Security
 
 - No sockets and no network connections. The QML engine uses a network access manager that

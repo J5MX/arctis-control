@@ -48,6 +48,10 @@ Desinstalar: `sudo pacman -R arctis-control`.
 Si el auricular no aparece, comprueba que HeadsetControl lo ve (`headsetcontrol -b`) y vuelve a
 conectar el receptor tras instalar `headsetcontrol`, que añade las reglas udev de permisos.
 
+Si encuentras un fallo o tienes otro modelo, abre una incidencia indicando el modelo, tu
+distribución y la salida de `headsetcontrol --version` y `headsetcontrol -o json` (no contiene
+datos personales).
+
 Los detalles de desarrollo, traducciones y seguridad están en el [README en inglés](README.md).
 
 ## Licencia

@@ -1,6 +1,22 @@
-__pycache__/
-*.pyc
+# Build output
 build/
+build-*/
+compile_commands.json
+.cache/
+
+# makepkg
 packaging/src/
 packaging/pkg/
-packaging/*.pkg.tar.zst
+*.pkg.tar.zst
+
+# Python
+__pycache__/
+*.pyc
+
+# Editors and IDEs
+.vscode/
+.idea/
+*.user
+*.swp
+*~
+.DS_Store
