@@ -1,0 +1,27 @@
+# Maintainer: J5MX <35576890+J5MX@users.noreply.github.com>
+#
+# Compila desde la copia local del repositorio (la carpeta superior a esta).
+# Uso:  cd packaging && makepkg -si
+
+pkgname=nova5-panel
+pkgver=0.2.0
+pkgrel=1
+pkgdesc="Panel no oficial para los SteelSeries Arctis Nova 5: batería, ecualizador y ajustes (HeadsetControl)"
+arch=('x86_64')
+url="https://github.com/J5MX/nova5-panel"
+license=('custom')
+depends=('headsetcontrol' 'qt6-base' 'qt6-declarative' 'qt6-svg' 'gcc-libs' 'glibc')
+makedepends=('cmake')
+optdepends=('ttf-fira-sans: tipografía de la interfaz')
+
+build() {
+  cmake -B build -S "$startdir/.." \
+    -DCMAKE_BUILD_TYPE=None \
+    -DCMAKE_INSTALL_PREFIX=/usr \
+    -Wno-dev
+  cmake --build build
+}
+
+package() {
+  DESTDIR="$pkgdir" cmake --install build
+}

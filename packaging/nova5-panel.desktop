@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Arctis Nova 5
+Comment=Batería, ecualizador y ajustes de los SteelSeries Arctis Nova 5
+Exec=nova5-panel
+Icon=nova5-panel
+Terminal=false
+Categories=AudioVideo;Audio;
+StartupWMClass=nova5-panel
