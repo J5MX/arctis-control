@@ -30,23 +30,33 @@ Probado en un Arctis Nova 5. El resto se ha probado con el auricular simulado de
 
 ## Instalación (Arch Linux / CachyOS)
 
-```
-cd packaging
-makepkg -si
-```
+1. Instala las herramientas para compilar paquetes (en CachyOS casi siempre vienen ya):
+   ```
+   sudo pacman -S --needed git base-devel
+   ```
+2. Descarga el código y compila el paquete:
+   ```
+   git clone https://github.com/J5MX/arctis-control.git
+   cd arctis-control/packaging
+   makepkg -si
+   ```
+   Ejecuta `makepkg` **sin** `sudo`: ya te pedirá la contraseña cuando la necesite. La opción `-s`
+   instala sola las dependencias y `-i` instala la app al terminar de compilarla.
+3. Abre **Arctis Control** desde el menú de aplicaciones (o con `arctis-control`).
 
-Instala `/usr/bin/arctis-control`, el lanzador **Arctis Control** y su icono. Sustituye al antiguo
-paquete `nova5-panel` y recupera sus ajustes.
+Si el auricular no aparece, vuelve a conectar su receptor USB (al instalar `headsetcontrol` se
+añaden las reglas de permisos, que se aplican al conectarlo) y comprueba que `headsetcontrol -b`
+lo detecta.
 
-- Dependencias: `headsetcontrol`, `qt6-base`, `qt6-declarative`, `qt6-svg`, `libpulse` (para
-  `pactl`, que usa el interruptor del micrófono con PipeWire).
+**Actualizar:** `cd arctis-control && git pull && cd packaging && makepkg -si`
+**Desinstalar:** `sudo pacman -R arctis-control`
+
+Se instala `/usr/bin/arctis-control`, el lanzador **Arctis Control** y su icono.
+
+- Dependencias (las instala `makepkg -s`): `headsetcontrol`, `qt6-base`, `qt6-declarative`,
+  `qt6-svg`, `libpulse` (para `pactl`, que usa el interruptor del micrófono).
 - Para compilar: `cmake`, `qt6-tools`.
 - Opcional: `ttf-fira-sans` para la tipografía.
-
-Desinstalar: `sudo pacman -R arctis-control`.
-
-Si el auricular no aparece, comprueba que HeadsetControl lo ve (`headsetcontrol -b`) y vuelve a
-conectar el receptor tras instalar `headsetcontrol`, que añade las reglas udev de permisos.
 
 Si encuentras un fallo o tienes otro modelo, abre una incidencia indicando el modelo, tu
 distribución y la salida de `headsetcontrol --version` y `headsetcontrol -o json` (no contiene

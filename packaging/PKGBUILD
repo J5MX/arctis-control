@@ -13,9 +13,6 @@ license=('GPL-3.0-or-later')
 depends=('headsetcontrol' 'qt6-base' 'qt6-declarative' 'qt6-svg' 'libpulse' 'gcc-libs' 'glibc')
 makedepends=('cmake' 'qt6-tools')
 optdepends=('ttf-fira-sans: interface font')
-provides=('nova5-panel')
-conflicts=('nova5-panel')
-replaces=('nova5-panel')
 
 build() {
   cmake -B build -S "$startdir/.." \

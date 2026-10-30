@@ -30,23 +30,32 @@ Tested on an Arctis Nova 5. The other models have been tested with HeadsetContro
 
 ## Installation (Arch Linux / CachyOS)
 
-```
-cd packaging
-makepkg -si
-```
+1. Install the tools needed to build packages (most CachyOS systems already have them):
+   ```
+   sudo pacman -S --needed git base-devel
+   ```
+2. Download the code and build the package:
+   ```
+   git clone https://github.com/J5MX/arctis-control.git
+   cd arctis-control/packaging
+   makepkg -si
+   ```
+   Run `makepkg` **without** `sudo`: it asks for your password when it needs it. The `-s` flag
+   installs the dependencies for you and `-i` installs the app once it is built.
+3. Open **Arctis Control** from your application menu (or run `arctis-control`).
 
-This installs `/usr/bin/arctis-control`, the **Arctis Control** launcher and its icon. It replaces
-the older `nova5-panel` package and imports its settings.
+If the headset does not show up, replug its USB receiver (installing `headsetcontrol` adds the
+permission rules that apply when it is connected) and check that `headsetcontrol -b` sees it.
 
-- Dependencies: `headsetcontrol`, `qt6-base`, `qt6-declarative`, `qt6-svg`, `libpulse` (for
-  `pactl`, used by the microphone switch with PipeWire).
+**Update:** `cd arctis-control && git pull && cd packaging && makepkg -si`
+**Uninstall:** `sudo pacman -R arctis-control`
+
+What gets installed: `/usr/bin/arctis-control`, the **Arctis Control** launcher and its icon.
+
+- Dependencies (installed automatically by `makepkg -s`): `headsetcontrol`, `qt6-base`,
+  `qt6-declarative`, `qt6-svg`, `libpulse` (for `pactl`, used by the microphone switch).
 - Build dependencies: `cmake`, `qt6-tools`.
 - Optional: `ttf-fira-sans` for the interface font.
-
-Uninstall with `sudo pacman -R arctis-control`.
-
-If the headset does not show up, check that HeadsetControl sees it (`headsetcontrol -b`) and
-replug the receiver after installing `headsetcontrol`, which adds the udev permission rules.
 
 ## Development
 
